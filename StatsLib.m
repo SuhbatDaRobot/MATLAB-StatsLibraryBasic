@@ -14,6 +14,7 @@ classdef StatsLib
     %       - Chebyshevsky
     %       - Box and Whisker
     %   - Let functions ingest each others data
+    %   - Functions need ability to ingest continuous data not just integer data (done via sig fig mirroring for rounding)
     %   - Add variable input length via argc input ability and auto assume
     %   - Data ingest stream: array for acceptable data types of function data input
     %     Compare against the inputs and function outputs error if error present
