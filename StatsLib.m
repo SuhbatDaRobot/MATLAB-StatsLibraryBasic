@@ -194,7 +194,7 @@ classdef StatsLib
                 output = zeros(size(input));
                 
                 %generate random index array to reassign
-                    randomIndices = MAT150Functions.GenerateRandomNonRepeatingIntegerArray(numel(input));
+                    randomIndices = StatsLib.GenerateRandomNonRepeatingIntegerArray(numel(input));
 
                 for i = 1:numel(input)
                     output(i) = input(randomIndices(i));
@@ -234,6 +234,21 @@ classdef StatsLib
                 avg = mean(input);
             end
 
+            function avg = CalcAverage(input)
+                avg = mean(input)
+            end
+
+            function avg = CalcAverage_inputList(input1,input2,varargin)
+                allValsVect = zeros(1,numel(varargin)+2);
+                allValsVect(1:2) = [input1, input2];
+                
+                for i = 1:numel(varargin)
+                    allValsVect(i+2) = varargin{i};
+                end
+
+                avg = mean(allValsVect);
+            end
+
             function medianVal = CalcMedian(data)
                 medianVal = median(data);
             end
@@ -247,13 +262,23 @@ classdef StatsLib
                 if max(dataHitCounts) > 1
                     modeVal = mode(data);
                 else
-                    modeVal = "dataset has no mode";
+                    modeVal = [];
+                    % add argc that makes this display turned on by default but can disable when nested
+                    disp('data has no mode');
                 end
+            end
+
+            function range = CalcDataRange(data)
+                range = max(data) - min(data);
+            end
+
+            function midRangeVal = CalcDataMidRange(data)
+                midRangeVal = (max(data) + min(data)) ./ 2;
             end
 
             function [output] = CalcCentralTendencies_ALL(inputArray)
                 %CalcCentralTendencies() calculate most common central tendencies
-                output = [mean(inputArray) median(inputArray) MAT150Functions.CalcMode(inputArray)];
+                output = [mean(inputArray) median(inputArray) StatsLib.CalcMode(inputArray)];
             end
 
         %Average functions
@@ -261,7 +286,7 @@ classdef StatsLib
                 %CalcDataAverage() calculate average of input array
                 arrayAvg = mean(data);
             end
-
+            
             function [output] = CalcAverages_MatrixRows(inputM)
                 %FunctionName short explanation here
                 %	Inputs:
@@ -282,7 +307,7 @@ classdef StatsLib
                 %	Outputs:
                 %	detailed explanation here
                 
-                output = mean(MAT150Functions.CalcAverages_MatrixRows(inputM));
+                output = mean(StatsLib.CalcAverages_MatrixRows(inputM));
             end
             
             function weightedAvg = CalcWeightedMean_CategoryMeanVectAndWeightVect(catMeans, weightArray)
@@ -300,7 +325,7 @@ classdef StatsLib
             end
             
             function weightedAvg = CalcWeightedMean_AvgTableM(categoricalAvgTableM)
-                weightedAvg = MAT150Functions.CalcWeightedMean(categoricalAvgTableM(:,1), categoricalAvgTableM(:,2));
+                weightedAvg = StatsLib.CalcWeightedMean(categoricalAvgTableM(:,1), categoricalAvgTableM(:,2));
             end
             
             function weightedAvg = CalcWeightedMean_CategoryDataMAndWeightVect(dataM, weightVect)
@@ -310,7 +335,7 @@ classdef StatsLib
                     avgVect(i) = mean(dataM(i,:));
                 end
                 
-                weightedAvg = MAT150Functions.CalcWeightedMean(avgVect, weightVect);
+                weightedAvg = StatsLib.CalcWeightedMean(avgVect, weightVect);
             end
             
         %Measures of Variation - stdDev and Variance
@@ -345,9 +370,9 @@ classdef StatsLib
                 %		-output{dataType} => 
                 
                 if sampleType == lower("population")
-                    output = MAT150Functions.CalcVariance_Population(data);
+                    output = StatsLib.CalcVariance_Population(data);
                 elseif sampleType == lower("sample")
-                    output = MAT150Functions.CalcVariance_Sample(data);
+                    output = StatsLib.CalcVariance_Sample(data);
                 end
             end
             
@@ -359,7 +384,7 @@ classdef StatsLib
                 %	Outputs:
                 %		-stdDev{dataType} => 
                 
-                stdDev = sqrt(MAT150Functions.CalcVariance_Population(data));
+                stdDev = sqrt(StatsLib.CalcVariance_Population(data));
             end
 
             function stdDev = CalcStdDev_Sample(data)
@@ -370,7 +395,7 @@ classdef StatsLib
                 %	Outputs:
                 %		-stdDev{dataType} => 
                 
-                stdDev = sqrt(MAT150Functions.CalcVariance_Sample(data));
+                stdDev = sqrt(StatsLib.CalcVariance_Sample(data));
             end
 
             function stdDev = CalcStdDev(data, sampleType)
@@ -383,22 +408,22 @@ classdef StatsLib
                 %       - sampleType
                 
                 if lower(sampleType) == "population"
-                    stdDev = MAT150Functions.CalcStdDev_Population(data);
+                    stdDev = StatsLib.CalcStdDev_Population(data);
                 elseif lower(sampleType) == "sample"
-                    stdDev = MAT150Functions.CalcStdDev_Sample(data);
+                    stdDev = StatsLib.CalcStdDev_Sample(data);
                 end
             end
 
         %All measures of variation in a single function
-            function [output] = CalcBaseDataMeasures(data, sampleType) %modify to have default value for sampleType using nargin and varargin
+            function [output] = CalcBaseDataVariationMeasures(data, sampleType) %modify to have default value for sampleType using nargin and varargin
                 output = zeros(1,4);
                 output(2) = mean(data);
                 output(1) = range(data);
                 if strcmp(sampleType,"population")
-                    output(3) = MAT150Functions.CalcVariance_Population(data);
+                    output(3) = StatsLib.CalcVariance_Population(data);
                     output(4) = sqrt(output(3));
                 elseif strcmp(sampleType,"sample")
-                    output(3) = MAT150Functions.CalcVariance_Sample(data);
+                    output(3) = StatsLib.CalcVariance_Sample(data);
                     output(4) = sqrt(output(3));
                 else
                     error('Sample Type not accepted input value')
@@ -424,7 +449,7 @@ classdef StatsLib
 				function tableMean = CalcMeanofFreqTable_FreqTableM(freqTableM)
 					classBounds = [freqTableM(:,1), freqTableM(:,2)];
 					tableFreqs = freqTableM(:,3)';
-					tableMean = MAT150Functions.CalcMeanOfFreqTable(classBounds, tableFreqs);
+					tableMean = StatsLib.CalcMeanOfFreqTable(classBounds, tableFreqs);
 				end
 
                 function binEdges = CalcClassEdges(classBoundsM)
@@ -437,11 +462,7 @@ classdef StatsLib
                         binEdges(i+1) = classBoundsM(i,2) + edgeDelta;
                     end
                 end
-                
-                function range = CalcDataRange(data)
-                    range = max(data) - min(data);
-                end
-                
+
                 function [cumulFreqs] = CalcCumulFreqs_FROM_FreqArray(freqArray)
                     cumulFreqs = freqArray;
                     for i = 2:numel(FreqArray)
@@ -471,7 +492,7 @@ classdef StatsLib
                     %	Outputs:
                     %		-[dataM]{dataType} => 
                     
-                    freqs = MAT150Functions.CountFreqs_StringInput(dataVect, members);
+                    freqs = StatsLib.CountFreqs_StringInput(dataVect, members);
                     dataM = [];
                 end
 
@@ -490,7 +511,7 @@ classdef StatsLib
                 end
             
                 function [generatedData] = GenerateDataVect_FreqTableMatrix(freqTableM)
-                    generatedData = MAT150Functions.GenerateDataVect_FreqTableVects([freqTableM(:,1), freqTableM(:,2)], freqTableM(:,3));
+                    generatedData = StatsLib.GenerateDataVect_FreqTableVects([freqTableM(:,1), freqTableM(:,2)], freqTableM(:,3));
                 end
                 
             %Givens: Class bounds, raw data
@@ -506,7 +527,7 @@ classdef StatsLib
                 end
                 
                 function [freqs, relFreqs, cumulFreqs] = CalcFreqs_DataWithClassBounds(data, classBoundsM)
-                    freqs = MAT150Functions.CalcFreq_DataWithClassBounds(data, classBoundsM);
+                    freqs = StatsLib.CalcFreq_DataWithClassBounds(data, classBoundsM);
                     relFreqs = freqs ./ numel(data);
                     cumulFreqs = zeros(numel(freqs),1);
                     cumulFreqs(1) = freqs(1);
@@ -520,8 +541,8 @@ classdef StatsLib
                 end
                 
                 function [dataM] = GenerateCompleteFreqTableMatrix_DataWithBins(classBoundsM, data)
-                    [freqs, relFreqs, cumulFreqs] = MAT150Functions.CalcFreqs_DataWithClassBounds(classBoundsM, data);
-                    midpoints = MAT150Functions.CalcClassMidpoints(classBoundsM);
+                    [freqs, relFreqs, cumulFreqs] = StatsLib.CalcFreqs_DataWithClassBounds(classBoundsM, data);
+                    midpoints = StatsLib.CalcClassMidpoints(classBoundsM);
                     
                     dataM = [classBoundsM, midpoints, freqs, relFreqs, cumulFreqs];
                 end
@@ -536,7 +557,7 @@ classdef StatsLib
                         relFreqs = zeros(1,numClasses);
                         cumulFreqs = zeros(1,numClasses);
                     
-                    classWidth = MAT150Functions.CalcClassWidth(inputData, numClasses);
+                    classWidth = StatsLib.CalcClassWidth(inputData, numClasses);
                     
                     %Generate classes for binning
                         generatedClasses(1,:) = [min(inputData), min(inputData) + classWidth - 1];
@@ -561,13 +582,13 @@ classdef StatsLib
                     %functions inputs as a binary option to add it and what
                     %row to add it in, make this code more robust
                     
-                    %classWidth = MAT150Functions.CalcClassWidth(inputData, numClasses);
+                    %classWidth = StatsLib.CalcClassWidth(inputData, numClasses);
                     %classWidthArray = zeros(numClasses, 1);
                     %for i = 1:numClasses
                     %    classWidthArray(i) = classWidth;
                     %end
                 
-                    [classes, freqs, relFreqs, cumulFreqs] = MAT150Functions.GenerateFreqTableDataVects_Data(inputData, numClasses);
+                    [classes, freqs, relFreqs, cumulFreqs] = StatsLib.GenerateFreqTableDataVects_Data(inputData, numClasses);
                 
                     dataCont = classes;
                     dataCont(:,3) = freqs;
@@ -581,8 +602,8 @@ classdef StatsLib
                 end
                 
                 function [dataM] = GenerateCompleteFreqTableDataMatrix_DataAndClassCount(inputData, numClasses)
-                    [classes, freqs, relFreqs, cumulFreqs] = MAT150Functions.GenerateFreqTableDataVects_Data(inputData, numClasses);
-                    midpoints = MAT150Functions.CalcClassMidpoints(classes);
+                    [classes, freqs, relFreqs, cumulFreqs] = StatsLib.GenerateFreqTableDataVects_Data(inputData, numClasses);
+                    midpoints = StatsLib.CalcClassMidpoints(classes);
                     dataM = (classes); 
                     dataM(:,3) = midpoints;
                     dataM(:,4) = freqs; 
@@ -629,7 +650,7 @@ classdef StatsLib
                 %freq dist table data
                     function [h] = GenerateHistogram_FreqTableMatrix(freqTableM)
                         binCounts = [];
-                        midPoints = MAT150Functions.CalcClassMidpoints([freqTableM(:,1) freqTableM(:,2)]);
+                        midPoints = StatsLib.CalcClassMidpoints([freqTableM(:,1) freqTableM(:,2)]);
                         
                         %figure out normal midpoint placement here and
                         %standardize the placement across the rest of the
@@ -655,6 +676,48 @@ classdef StatsLib
                     end
         
         %Measures of Position - Quartiles and Outliers
+            %Percentile Functions
+                function percentileVal = CalcPercentileOfValue(val, data)
+                    %CalcPercentileOfValue() | Takes dataset and value and calculates percentile value corresponding to input data value
+                    %	detailed description here
+                    %	Inputs:
+                    %		-val, data{dataType} => 
+                    %	Outputs:
+                    %		-percentileVal{dataType} => 
+                    
+                    dataSorted = sort(data);
+                    percentileVal = (numel(find(dataSorted<val)) ./ numel(data)) .* 100;
+                end
+
+                function percentileIndex = CalcPercentileIndex(percentileWeWant, data)
+                    %CalcPercentileIndex() | Finds index value of percentile value we are looking for within the data
+                    %	detailed description here
+                    %	Inputs:
+                    %		-percentileWeWant, data{dataType} => 
+                    %	Outputs:
+                    %		-percentileIndex{dataType} => 
+                    
+                    if percentileWeWant > 0 && percentileWeWant < 1
+                        percentileUsing = percentileWeWant .* 100;
+                    else
+                        percentileUsing = percentileWeWant;
+                    end
+
+                    percentileIndex = round((percentileUsing ./ 100) .* numel(data),0) + 1;
+                end
+
+                function valueCorresponding2Percentile = CalcValueOfPercentile(percentileWeWant, data)
+                    %CalcPercentileValueFromData() | Outputs value in dataset corresponding to percentile value we want
+                    %	detailed description here
+                    %	Inputs:
+                    %		-percentileWeWant, data{dataType} => 
+                    %	Outputs:
+                    %		-valueCorresponding2Percentile{dataType} => 
+                    
+                    dataSorted = sort(data);
+                    valueCorresponding2Percentile = dataSorted(StatsLib.CalcPercentileIndex(percentileWeWant, data));
+                end
+
             %Locator formula
                 function medianIndex = CalcMedianIndex(dataset)
                     %CalcMedianIndex() calculates index of median from dataset
@@ -680,7 +743,7 @@ classdef StatsLib
                     data_sorted = sort(data);
 
                     dataMedian = median(data);
-                    medianIndex = MAT150Functions.CalcMedianIndex(data);
+                    medianIndex = StatsLib.CalcMedianIndex(data);
                     
                     dataQ1 = -1;
                     dataQ3 = -1;
@@ -716,7 +779,7 @@ classdef StatsLib
                     %	Outputs:
                     %		-output{dataType} => 
                 
-                    data_quartile = MAT150Functions.CalcQuartiles(data);
+                    data_quartile = StatsLib.CalcQuartiles(data);
                     output = data_quartile(4) - data_quartile(2);
                 end
 
@@ -728,12 +791,12 @@ classdef StatsLib
                     %	Outputs:
                     %		-output{dataType} => 
                 
-                    output = MAT150Functions.CalcQuartiles(data);
+                    output = StatsLib.CalcQuartiles(data);
                     output(6) = output(4) - output(2);
                 end
                 
                 function [output] = CalcQuartileMetrics_IQRReadableWithIQR(data)
-                    container = MAT150Functions.CalcQuartileMetrics_ALL(data);
+                    container = StatsLib.CalcQuartileMetrics_ALL(data);
                     values = zeros(1,8);
                     values(1) = container(1); %min
                     values(2) = container(2) - container(6); % lower outlier threshold
@@ -760,7 +823,7 @@ classdef StatsLib
                     %	Outputs:
                     %		-[outliers]{dataType} => 
                 
-                    data_metrics_quartile = MAT150Functions.CalcQuartileMetrics_ALL(data);
+                    data_metrics_quartile = StatsLib.CalcQuartileMetrics_ALL(data);
                 
                     boundBuffer = data_metrics_quartile(6) .* 1.5;
                     bounds = [data_metrics_quartile(2)-boundBuffer, data_metrics_quartile(4)+boundBuffer];
@@ -787,14 +850,14 @@ classdef StatsLib
                     %	Outputs:
                     %		-output{dataType} => 
                 
-                    [a, b] = MAT150Functions.CalcOutliersViaIQR(data);
+                    [a, b] = StatsLib.CalcOutliersViaIQR(data);
                     outliers = [a, b];
                 end
             
             %All values together in one function
                 function [quartileInfo, outliers] = CalcQuartileDataAndOutlierViaIQRData(data)
-                    quartileInfo = MAT150Functions.CalcQuartileMetrics_IQRReadableWithIQR(data);
-                    outliers = MAT150Functions.CalcOutliers_Consolidated(data);
+                    quartileInfo = StatsLib.CalcQuartileMetrics_IQRReadableWithIQR(data);
+                    outliers = StatsLib.CalcOutliers_Consolidated(data);
                 end
             
         %Chebyshevsky Functions
@@ -820,7 +883,7 @@ classdef StatsLib
                 deltas = rangeYouWant - sampleMean;
                 %deltasInStdDevs = deltas ./ sampleStdDev;
 
-                %percentVal = MAT150Functions.CalcPercentDataInStdDevRangeViaChebyshevsky(deltaInStdDevs);
+                %percentVal = StatsLib.CalcPercentDataInStdDevRangeViaChebyshevsky(deltaInStdDevs);
                 % ^ This does not work because the percent width is calculated indepedently vs actual width
                 
                 %Needs to be compensated for syhmmetric distribution even though chebyshevsky
@@ -832,7 +895,7 @@ classdef StatsLib
                 end
 
                 if k > 1
-                    output = MAT150Functions.CalcPercentDataInStdDevRangeViaChebyshevsky(k);
+                    output = StatsLib.CalcPercentDataInStdDevRangeViaChebyshevsky(k);
                 else
                     output = -1;
                 end
@@ -860,7 +923,7 @@ classdef StatsLib
                 %need to change dataType to some other variable name to describe sampling distribution widthjhnhjkjhkkjh
                 %add normal distribution shit here
                 dataMean = mean(data);
-                dataStdDev = MAT150Functions.CalcStdDev(data, sampleSet);
+                dataStdDev = StatsLib.CalcStdDev(data, sampleSet);
 
                 normalDistBoundaries = [-3 -2 -1 0 1 2 3];
                 normalDistBoundaries = normalDistBoundaries .* dataStdDev;
@@ -923,7 +986,7 @@ classdef StatsLib
                 centralTendencyName = "null";
 
                 if isnumeric(data(randi(numel(data))))
-                    skewDirection = MAT150Functions.DetermineDataSkew(data);
+                    skewDirection = StatsLib.DetermineDataSkew(data);
                     if skewDirection == 0
                         centralTendencyName = "mean";
                     else
@@ -1013,7 +1076,7 @@ classdef StatsLib
                     %		-[output]{dataType} => 
                     
 					% TODO: DATA ENTRY FORMAT NEEDS REVIEW FORGET WHAT COLUMN IS WHAT IN TEH FREQUNECY TABLE INPUTS
-                    output = MAT150Functions.GenerateProbDistTableMatrix_FROM_OutcomeVectANDProbVect(FreqTableM(:,1),(FreqTableM(:,2)./sum(FreqTableM(:,2))));
+                    output = StatsLib.GenerateProbDistTableMatrix_FROM_OutcomeVectANDProbVect(FreqTableM(:,1),(FreqTableM(:,2)./sum(FreqTableM(:,2))));
                 end
 
                 function [output] = GenerateHistogram_ProbDistTable(DataMatrix_ProbDistTable)
@@ -1054,7 +1117,7 @@ classdef StatsLib
                     %	Outputs:
                     %		-[output]{dataType} => 
                     
-                    currentMean = MAT150Functions.CalcProbDist_Mean(probTableM);
+                    currentMean = StatsLib.CalcProbDist_Mean(probTableM);
                     output = sum((probTableM(:,1) - currentMean).^2 .* probTableM(:,2));
                 end
                 
@@ -1066,7 +1129,25 @@ classdef StatsLib
                     %	Outputs:
                     %		-[output]{dataType} => 
                     
-                    output = sqrt(MAT150Functions.CalcProbDist_Variance(input));
+                    output = sqrt(StatsLib.CalcProbDist_Variance(input));
+                end
+
+                function stdDevFreqTable = CalcStdDev_OFFreqTable(classBounds, classFreqs)
+                    %CalcProbDist_FreqTableStdDev() | short explanation here
+                    %	detailed description here
+                    %	Inputs:
+                    %		-classBounds, classFreqs{dataType} => 
+                    %	Outputs:
+                    %		-stdDevFreqTable{float} => 
+                
+                    % THIS IS FOR SAMPLES NOT POPULATIONS
+
+                    classMidpoints = StatsLib.CalcClassMidpoints(classBounds);
+                    numSamples = sum(classFreqs);
+                    sumFreqTimesMidpoint = sum(classMidpoints .* classFreqs);
+                    sumFreqTimesMidpointSquared = sum(classMidpoints.^2 .* classFreqs);
+                    varianceValue = (sumFreqTimesMidpointSquared - (sumFreqTimesMidpoint.^2 ./ numSamples)) ./ (numSamples - 1); %change this to numSamples from (numSamples - 1) for populations
+                    stdDevFreqTable = sqrt(varianceValue);
                 end
 
                 function [output] = CalcProbDist_AllStatMeasures(input)
@@ -1078,11 +1159,39 @@ classdef StatsLib
                     %		-[output]{dataType} => 
                     
                     output = zeros(1,3);
-                    output(1) = MAT150Functions.CalcProbDist_Mean(input);
-                    output(2) = MAT150Functions.CalcProbDist_Variance(input);
-                    output(3) = MAT150Functions.CalcProbDist_StdDev(input);
+                    output(1) = StatsLib.CalcProbDist_Mean(input);
+                    output(2) = StatsLib.CalcProbDist_Variance(input);
+                    output(3) = StatsLib.CalcProbDist_StdDev(input);
                 end
-        
+                
+                function coeffOfVariation = CalcCoefficientOfVariation(data, varargin)
+                    %CalcCoefficientOfVariation() | Calculates Coefficient of Variation
+                    %	Coefficient of variation is a risk 2 reward metric for different data series
+                    %   Formula: stdDev / mean x 100 - used to understand spread of data set
+                    %	Inputs:
+                    %		-data{vector<int,float,double>} => n x 1 or 1 x n | data containing discrete and/or continuous data
+                    %       -varagin{
+                    %                sampleSpace{string} => string containing either "population" or "sample" to declare sample space for corresponding formula to be used
+                    %               }
+                    %	Outputs:
+                    %		-coeffOfVariation{int,float,double} => value of coeffiecient of variation [unit: percent]
+                    
+                    if nargin == 2
+                        acceptedInputs = ["population", "sample"];
+                        if StatsLib.CheckUserStringInputValid(lower(varargin{1}), acceptedInputs)
+                            if strcmp(varargin{1},"population")
+                                coeffOfVariation = StatsLib.CalcStdDev_Population(data) ./ mean(data) .* 100; % in percent
+                            elseif strcmp(varargin{1},"sample")
+                                coeffOfVariation = StatsLib.CalcStdDev_Sample(data) ./ mean(data) .* 100; % in percent
+                            end
+                        end
+                    elseif nargin == 1 %Default to sample
+                        coeffOfVariation = StatsLib.CalcStdDev_Sample(data) ./ StatsLib.CalcMean(data) .* 100; % in percent
+                    else
+                        error('Too many inputs!');
+                    end
+                end
+
         % 4.2 - Binomial Distributions
             %Calculate Binomial Probabilities
                 function output = CalcBinomialProbability_base(p,n,x)
@@ -1103,7 +1212,7 @@ classdef StatsLib
                         validInputs = ["=", ">", "<", ">=", "<="];
                         if nargin == 4
                             probWidth = varargin{1};
-                            if MAT150Functions.CheckUserStringInputValid(probWidth, validInputs) == false
+                            if StatsLib.CheckUserStringInputValid(probWidth, validInputs) == false
                                 error('Incorrect comparison arg(varargin{4})')
                             end
                         elseif nargin == 3
@@ -1118,26 +1227,26 @@ classdef StatsLib
 
                     %Calcs
                         if strcmp(probWidth,'=')
-                            output = MAT150Functions.CalcBinomialProbability_base(p,n,x);
+                            output = StatsLib.CalcBinomialProbability_base(p,n,x);
                         elseif strcmp(probWidth,'<')
                             output = 0;
                             for i = 0:x-1
-                                output = output + MAT150Functions.CalcBinomialProbability_base(p,n,i);
+                                output = output + StatsLib.CalcBinomialProbability_base(p,n,i);
                             end
                         elseif strcmp(probWidth,'>')
                             output = 0;
                             for i = x+1:1:n
-                                output = output + MAT150Functions.CalcBinomialProbability_base(p,n,i);
+                                output = output + StatsLib.CalcBinomialProbability_base(p,n,i);
                             end
                         elseif strcmp(probWidth,'>=')
                             output = 0;
                             for i = x:1:n
-                                output = output + MAT150Functions.CalcBinomialProbability_base(p,n,i);
+                                output = output + StatsLib.CalcBinomialProbability_base(p,n,i);
                             end
                         elseif strcmp(probWidth,'<=')
                             output = 0;
                             for i = 0:x
-                                output = output + MAT150Functions.CalcBinomialProbability_base(p,n,i);
+                                output = output + StatsLib.CalcBinomialProbability_base(p,n,i);
                             end
                         end
                 end
@@ -1147,7 +1256,7 @@ classdef StatsLib
                     probVal = 0;
                     xVals = [xVal1, xVal2];
                     for i = min(xVals):1:max(xVals)
-                        probVal = probVal + MAT150Functions.CalcBinomialProbability(p,n,i);
+                        probVal = probVal + StatsLib.CalcBinomialProbability(p,n,i);
                     end
                 end
 
@@ -1163,7 +1272,7 @@ classdef StatsLib
 					binomialTableM = xValueVect';
 
 					for i = 1:numel(xValueVect)
-						binomialTableM(i,2) = MAT150Functions.CalcBinomialProbability(p,n,xValueVect(i));
+						binomialTableM(i,2) = StatsLib.CalcBinomialProbability(p,n,xValueVect(i));
 					end
 				end
 
@@ -1182,14 +1291,14 @@ classdef StatsLib
                 end
 
                 function output = CalcBinomialStdDev(p,n)
-                    output = sqrt(MAT150Functions.CalcBinomialVariance(p,n));
+                    output = sqrt(StatsLib.CalcBinomialVariance(p,n));
                 end
 
                 function [output] = CalcBinomialCentralTendencies_ALL(p,n)
                     output = zeros(1,3);
-                    output(1) = MAT150Functions.CalcBinomialMean(p,n);
-                    output(2) = MAT150Functions.CalcBinomialVariance(p,n);
-                    output(3) = MAT150Functions.CalcBinomialStdDev(p,n);
+                    output(1) = StatsLib.CalcBinomialMean(p,n);
+                    output(2) = StatsLib.CalcBinomialVariance(p,n);
+                    output(3) = StatsLib.CalcBinomialStdDev(p,n);
                 end
 
         % C5 - Normal Distributions
@@ -1197,6 +1306,19 @@ classdef StatsLib
                 %Calc Z-score
                     function zScore = CalcZScore(x,mu,stdDev)
                         zScore = (x - mu) ./ stdDev;
+                    end
+                    
+                %Compare Z-Scores
+                    function [zScoresVect] = CompareZScores(inputMatrix)
+                        %CompareZScores() | Calculates all ZScores for matrix input
+                        %	Calculates Zscores for each row of the input matrix
+                        %	Inputs:
+                        %		-inputMatrix{dataType} => 
+                        %	Outputs:
+                        %		-[zScoresVect]{dataType} => 
+                        
+                        sizeInputM = size(inputMatrix);
+                        zScoresVect = zeros(sizeInputM(1),1);
                     end
 
                 %Calc x from Z-score
@@ -1310,13 +1432,13 @@ classdef StatsLib
                     end
 
 					function output = CalcProbDensity_xVal(xVal, mu, sigma, varargin)
-						zScore0 = MAT150Functions.CalcZScore(xVal, mu, sigma);
+						zScore0 = StatsLib.CalcZScore(xVal, mu, sigma);
 						
 						if nargin > 3
 							inputArguments = varargin{1:numel(varargin)};
-							output = MAT150Functions.CalcProbDensity_zScore(zScore0, inputArguments);
+							output = StatsLib.CalcProbDensity_zScore(zScore0, inputArguments);
 						else
-							output = MAT150Functions.CalcProbDensity_zScore(zScore0);
+							output = StatsLib.CalcProbDensity_zScore(zScore0);
 						end
 					end
 
@@ -1324,13 +1446,13 @@ classdef StatsLib
                 %ProbDensity between two z-Scores
                     function outputProbDensity = CalcProbDensityBetweenZScores(zScore1, zScore2)
                         container = [zScore1, zScore2];
-						outputProbDensity = MAT150Functions.CalcProbDensity_zScore(max(container)) - MAT150Functions.CalcProbDensity_zScore(min(container));
+						outputProbDensity = StatsLib.CalcProbDensity_zScore(max(container)) - StatsLib.CalcProbDensity_zScore(min(container));
                     end
 
                 %ProbDensity between two x Values
                     function outputProbDensity = CalcProbDensityBetweenXVals(xVal1, xVal2, mu, sigma)
-                        container = [MAT150Functions.CalcZScore(xVal1,mu,sigma), MAT150Functions.CalcZScore(xVal2,mu,sigma)];
-						outputProbDensity = MAT150Functions.CalcProbDensityBetweenZScores(container(1), container(2));
+                        container = [StatsLib.CalcZScore(xVal1,mu,sigma), StatsLib.CalcZScore(xVal2,mu,sigma)];
+						outputProbDensity = StatsLib.CalcProbDensityBetweenZScores(container(1), container(2));
                     end
 
 				%ProbDensity for various xValues or zValues done in sequence
@@ -1347,7 +1469,7 @@ classdef StatsLib
 						if numel(typeContainer) == 1
 							currentTypeDeclaration = lower(typeContainer(1));
 							acceptableInputs = ["zscores" "zscore" "z scores" "z score"];
-							if MAT150Functions.CheckUserStringInputValid(currentTypeDeclaration, acceptableInputs)
+							if StatsLib.CheckUserStringInputValid(currentTypeDeclaration, acceptableInputs)
 								sizeInputContainer = size(inputM);
 								for i = 1:sizeInputContainer(1)
 										
@@ -1357,7 +1479,7 @@ classdef StatsLib
 							end
 						elseif numel(typeContainter) == 3
 							currentTypeDeclaration = lower(typeContainer(1));
-							if MAT150Functions.CheckUserStringInputValid(currentTypeDeclaration,acceptableInputs)
+							if StatsLib.CheckUserStringInputValid(currentTypeDeclaration,acceptableInputs)
 								
 							else
 								error('typeContainer type declaration incorrect');
