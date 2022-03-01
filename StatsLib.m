@@ -18,6 +18,7 @@ classdef StatsLib
     %   - Add variable input length via argc input ability and auto assume
     %   - Data ingest stream: array for acceptable data types of function data input
     %     Compare against the inputs and function outputs error if error present
+    %   - Standardize capitalization of "stddev"
     
     properties
         %Property1
@@ -62,6 +63,31 @@ classdef StatsLib
                     end
                 end
             end
+            
+            function dataSetPositive = CheckIfDataPositive(data)
+                dataSetPositive = true;
+                
+                sizeData = size(data);
+                for i = 1:sizeData(1)
+                    for j = 1:sizeData(2)
+                        if data(i,j) < 0
+                            dataSetPositive = false;
+                            break;
+                        end
+                    end
+                    
+                    if dataSetPositive == false;
+                        break;
+                    end
+                end
+            end
+
+            function vectProduct = MultiplyVectorComponents(dataVect)
+                vectProduct = dataVect(1);
+                for i = 2:numel(dataVect)
+                    vectProduct = vectProduct .* dataVect(i);
+                end
+            end
 
             function [output] = GenerateRandomNonRepeatingIntegerArray(sizeArray)
                 %GenerateRandomNonReatingIntegerArray() self explanatory
@@ -95,6 +121,17 @@ classdef StatsLib
                 end
             end
 
+            function [validatedFunctionArgs] = evaluateUserInputs(functionInputContainer, allowedFunctionInputs)
+                %evaluateUserInputs() | Take function varargin inputs and parse
+                %	Takes user inputs added to function inputs and checks them for useful information and consolidates them into a usable array
+                %	Inputs:
+                %		- input{dataType}  => 
+                %	Outputs:
+                %		- output{dataType} => 
+                
+                %Check matlab functions on how they allow passing of function behavior modifiers and the format by which it is done
+            end
+
             function [outputM] = TurnVectorIntoMatrix(dataVect, delineationCounter)
                 %TurnVectorIntoMatrix() Generate matrix from input vector
                 %	Takes input vector and creates new rows of equal length by adding proceeding values
@@ -124,6 +161,8 @@ classdef StatsLib
                 %	Outputs:
                 %		-[reorientedContainer]{dataType} => 
                 
+                % TODO: ALLOW NATURAL LANGUAGE INPUT ('vertical', 'horizontal') & make map function
+
                 sizeCont = size(inputContainer);
                 orientationCont = 0;
                 % orientation map:
@@ -137,9 +176,9 @@ classdef StatsLib
                     orientationCont = 3;
                 else
                     if sizeCont(1) > sizeCont(2)
-                        orientationCont = 1;
-                    else
                         orientationCont = 2;
+                    else
+                        orientationCont = 1;
                     end
                 end
                 
@@ -209,17 +248,49 @@ classdef StatsLib
                 %	Outputs:
                 %		- output{dataType} => 
                 
-                dataCopy = data;
+                dataCopy = StatsLib.CorrectOrientation(data,1); % 1 is horizontal
                 
-                for i = 1:numel(data)
-                    currentNumIndices = find(dataCopy == dataCopy(i));
+                stopNum = numel(data);
+                i = 0;
+                while i ~= stopNum
+                    currentNumIndices = find(dataCopy == dataCopy(i+1));
                     
                     if numel(currentNumIndices) > 1
                         for j = 2:numel(currentNumIndices)
-                            dataCopy(currentNumIndices(j)) = [];
+                            dataCopy(currentNumIndices(numel(currentNumIndices)-j+1)) = [];
+                            stopNum = stopNum - 1;
                         end
                     end
+                    i = i + 1;
                 end
+            end
+
+            function numUniqueNumbers = CalcNumberUniqueNumbersInArray(dataVect)
+                numUniqueNumbers = numel(StatsLib.Remove)
+            end
+
+        %Data Evalulations
+            function percentDifference = CalcPercentDifference(expVal,trueVal)
+                %CalcPercentDifference() | Calculates error of measurement versus established true value
+                %	Calculate percent error of experimental value versus true value using the formula: |measuredValue - trueValue| / trueValue * 100 %
+                %	Inputs:
+                %		-expVal,trueVal{dataType} => 
+                %	Outputs:
+                %		-percentDifference{dataType} => 
+                
+                percentDifference = (abs(expVal - trueVal)) ./ trueVal .* 100; % unit: percent (%)
+            end
+
+            function percentError = CalcPercentError(expVal, trueVal)
+                %CalcPercentError() | Calculates error of measurement
+                %	Calculates percent error of measurement via the percent error equation
+                %   Formula: abs(expVal - trueVal) / trueVal * 100 [%] (no real dimension, it is a ratio value)
+                %	Inputs:
+                %		-expVal, trueVal{dataType} => 
+                %	Outputs:
+                %		-percentError{dataType} => 
+                
+                percentError = StatsLib.CalcPercentDifference(expVal, trueVal);
             end
 
         %Central Tendencies
@@ -234,11 +305,7 @@ classdef StatsLib
                 avg = mean(input);
             end
 
-            function avg = CalcAverage(input)
-                avg = mean(input)
-            end
-
-            function avg = CalcAverage_inputList(input1,input2,varargin)
+            function avg = CalcMean_inputList(input1,input2,varargin)
                 allValsVect = zeros(1,numel(varargin)+2);
                 allValsVect(1:2) = [input1, input2];
                 
@@ -247,47 +314,96 @@ classdef StatsLib
                 end
 
                 avg = mean(allValsVect);
+            end 
+
+            function trimmedAvg = CalcTrimmedMean(dataVect,dataTrimPercent)
+                sizeData = numel(dataVect);
+                numSamples2Remove = round((dataTrimPercent./100).*sizeData,0);
+                sortedData = sort(dataVect);
+                trimmedData = sortedData(numSamples2Remove+1:(sizeData-numSamples2Remove));
+
+                trimmedAvg = mean(trimmedData);
+            end
+
+            function geometricMean = CalcGeometricMean(dataVect)
+                %CalcGeometricMean() | Function to calculate geometric mean
+                %	nth root of array product of n positive values
+                %	Inputs:
+                %		-dataVect{dataType} => 
+                %	Outputs:
+                %		-geometricMean{dataType} => 
+                
+                if StatsLib.CheckIfDataPositive(dataVect)
+                    geometricMean = StatsLib.MultiplyVectorComponents(dataVect) .^ (1/numel(dataVect));
+                else
+                    error('StatsLib.CalcGeometricMean() | All data input must be positive')
+                end
             end
 
             function medianVal = CalcMedian(data)
                 medianVal = median(data);
             end
 
-            function modeVal = CalcMode(data)
+            function [modeVals] = CalcMode(data,varargin)
                 dataHitCounts = zeros(size(data));
                 for i = 1:numel(data)
                     dataHitCounts(i) = numel(find(data == data(i)));
                 end
 
                 if max(dataHitCounts) > 1
-                    modeVal = mode(data);
+                    sortedDataAndHitsM = zeros(numel(data),2);
+                    sortedDataAndHitsM(:,1) = StatsLib.CorrectOrientation(sort(data),2);
+                    
+                    for i = 1:numel(data)
+                        sortedDataAndHitsM(i,2) = numel(find(sortedDataAndHitsM(:,1) == sortedDataAndHitsM(i,1)));
+                    end
+
+                    maxHitCount = max(sortedDataAndHitsM(:,2));
+                    maxHitCountIndices = find(sortedDataAndHitsM(:,2)==maxHitCount);
+
+                    modeVals = zeros(numel(maxHitCountIndices),1);
+
+                    for i = 1:numel(maxHitCountIndices)
+                        modeVals(i) = sortedDataAndHitsM(maxHitCountIndices(i),1);
+                    end
+
+                    modeVals = StatsLib.RemoveDataPointRepeats(modeVals);
+
                 else
-                    modeVal = [];
+                    modeVals = [];
                     % add argc that makes this display turned on by default but can disable when nested
                     disp('data has no mode');
                 end
             end
 
-            function range = CalcDataRange(data)
+            function range = CalcRange(data)
                 range = max(data) - min(data);
             end
 
-            function midRangeVal = CalcDataMidRange(data)
+            function midRangeVal = CalcMidRange(data)
                 midRangeVal = (max(data) + min(data)) ./ 2;
             end
 
-            function [output] = CalcCentralTendencies_ALL(inputArray)
+            function [output] = CalcCentralTendencies_Main3(inputArray)
                 %CalcCentralTendencies() calculate most common central tendencies
                 output = [mean(inputArray) median(inputArray) StatsLib.CalcMode(inputArray)];
             end
 
-        %Average functions
-            function arrayAvg = CalcAverage_Vect(data)
-                %CalcDataAverage() calculate average of input array
+            function [output] = CalcCentralTendencies_ALL(inputVect)
+                output = [ ...
+                    StatsLib.CalcCentralTendencies_Main3(inputVect), ... 
+                    StatsLib.CalcRange(inputVect), ...
+                    StatsLib.CalcMidRange(inputVect) ...
+                ]
+            end
+
+        %Mean functions
+            function arrayAvg = CalcMean_Vect(data)
+                %CalcDataMean() calculate Mean of input array
                 arrayAvg = mean(data);
             end
             
-            function [output] = CalcAverages_MatrixRows(inputM)
+            function [output] = CalcMeans_MatrixRows(inputM)
                 %FunctionName short explanation here
                 %	Inputs:
                 %	Outputs:
@@ -301,13 +417,13 @@ classdef StatsLib
                 end
             end
 
-            function [output] = CalcAverage_Matrix(inputM)
+            function [output] = CalcMean_Matrix(inputM)
                 %FunctionName short explanation here
                 %	Inputs:
                 %	Outputs:
                 %	detailed explanation here
                 
-                output = mean(StatsLib.CalcAverages_MatrixRows(inputM));
+                output = mean(StatsLib.CalcMeans_MatrixRows(inputM));
             end
             
             function weightedAvg = CalcWeightedMean_CategoryMeanVectAndWeightVect(catMeans, weightArray)
@@ -339,6 +455,14 @@ classdef StatsLib
             end
             
         %Measures of Variation - stdDev and Variance
+            function estimatedStdDev = CalcEstimatedStdDev(data)
+                estimatedStdDev = range(data) ./ 4;
+            end
+            
+            function estimatedStdDev = CalcEstimatedDevUsingRangeRuleOfThumb(data)
+                estimatedStdDev = range(data) ./ 4;
+            end
+
             function output = CalcVariance_Population(data)
                 %CalcVariance_Population() calculate population data variance
                 %	detailed description here
@@ -415,18 +539,84 @@ classdef StatsLib
             end
 
         %All measures of variation in a single function
-            function [output] = CalcBaseDataVariationMeasures(data, sampleType) %modify to have default value for sampleType using nargin and varargin
+            function [output] = CalcBaseDataVariationMeasures(data, varargin) %modify to have default value for sampleType using nargin and varargin
                 output = zeros(1,4);
                 output(2) = mean(data);
                 output(1) = range(data);
-                if strcmp(sampleType,"population")
-                    output(3) = StatsLib.CalcVariance_Population(data);
-                    output(4) = sqrt(output(3));
-                elseif strcmp(sampleType,"sample")
+                
+                if nargin == 1
                     output(3) = StatsLib.CalcVariance_Sample(data);
                     output(4) = sqrt(output(3));
+                elseif nargin == 2
+                    if strcmp(lower(varargin{1}),"population")
+                        output(3) = StatsLib.CalcVariance_Population(data);
+                        output(4) = sqrt(output(3));
+                    elseif strcmp(lower(varargin{1}),"sample")
+                        output(3) = StatsLib.CalcVariance_Sample(data);
+                        output(4) = sqrt(output(3));
+                    else
+                        error('Sample Type not accepted input value')
+                    end
                 else
-                    error('Sample Type not accepted input value')
+                    error('StatsLib.CalcBaseDataVariationMeasured() | Number of inputs not accepted')
+                end
+            end
+
+        % Using STD DEV for usual values
+            function [bounds] = CalcUsualValueBounds_inputData(data, varargin)
+                if nargin == 1
+                    stdDevData = StatsLib.CalcStdDev_Sample(data);
+                    meanData = mean(data);
+                    bounds = [meanData - (2.*stdDevData), meanData + (2.*stdDevData)];
+                elseif nargin == 2
+                    allowedInputs = ["sample", "population"];
+                    userInput = lower(varargin{1});
+                    if StatsLib.CheckUserStringInputValid(userInput,allowedInputs)
+                        if strcmp(userInput, "sample")
+                            stdDevData = StatsLib.CalcStdDev_Population(data);
+                            meanData = mean(data);
+                            bounds = [meanData - (2 .* stdDevData), meanData + (2 .* stdDevData)];
+                        elseif strcmp(userInput,"population")
+                            stdDevData = StatsLib.CalcStdDev_Sample(data);
+                            meanData = mean(data);
+                            bounds = [meanData - (2 .* stdDevData), meanData + (2 .* stdDevData)];
+                        else
+                            error("Sample input parse error");
+                        end
+                    else
+                        error('Sample type input not accepted');
+                    end
+                else
+                    error('Number of inputs not accepted')
+                end
+            end
+
+            function [bounds] = CalcUsualValueBounds_inputMeanAndStdDev(mean,stdDev)
+                if nargin == 2
+                    bounds = [mean-2.*stdDev, mean+2.*stdDev];
+                else
+                    error("Number of inputs not allowed")
+                end
+            end
+
+            function isUsual = EvaluateIfValueUsual_inputMeanAndStdDev(sampleVal, mu, sigma)
+                isUsual = true;
+                bounds = StatsLib.CalcUsualValueBounds_inputMeanAndStdDev(mu, sigma);
+                for i = 1:numel(sampleVal)
+                    if sampleVal(i) < bounds(1) || sampleVal(i) > bounds(2)
+                        isUsual = false;
+                        break;
+                    end
+                end
+            end
+
+            function isUsual = EvaluateIfValueUsual_inputData(sampleValue, data, varargin)
+                if nargin == 2
+                    
+                elseif nargin == 3
+
+                else
+                    error("Number of inputs not accepted.")
                 end
             end
 
@@ -443,7 +633,7 @@ classdef StatsLib
                 end
                 
                 function tableMean = CalcMeanOfFreqTable_ClassBoundsAndVectFreqs(MclassBounds, vectFreqs)
-                    tableMean = (sum(CalcClassMidpoints(MclassBounds).*vectFreqs)) ./ sum(vectFreqs);
+                    tableMean = (sum(StatsLib.CalcClassMidpoints(MclassBounds).*vectFreqs)) ./ sum(vectFreqs);
                 end
                 
 				function tableMean = CalcMeanofFreqTable_FreqTableM(freqTableM)
@@ -496,6 +686,24 @@ classdef StatsLib
                     dataM = [];
                 end
 
+                function stdDevFreqTable = CalcStdDev_OFFreqTable(classBounds, classFreqs)
+                    %CalcProbDist_FreqTableStdDev() | short explanation here
+                    %	detailed description here
+                    %	Inputs:
+                    %		-classBounds, classFreqs{dataType} =>
+                    %	Outputs:
+                    %		-stdDevFreqTable{float} =>
+
+                    % THIS IS FOR SAMPLES NOT POPULATIONS
+
+                    classMidpoints = StatsLib.CalcClassMidpoints(classBounds);
+                    numSamples = sum(classFreqs);
+                    sumFreqTimesMidpoint = sum(classMidpoints .* classFreqs);
+                    sumFreqTimesMidpointSquared = sum(classMidpoints.^2 .* classFreqs);
+                    varianceValue = (sumFreqTimesMidpointSquared - (sumFreqTimesMidpoint.^2 ./ numSamples)) ./ (numSamples - 1); %change this to numSamples from (numSamples - 1) for populations
+                    stdDevFreqTable = sqrt(varianceValue);
+                end
+
             %Rebuild Data Given Freq Distribution Table
                 function [generatedData] = GenerateDataVect_FreqTableVects(M_classBounds, vect_Freqs)
                     generatedData = zeros(1,sum(vect_Freqs));
@@ -536,8 +744,8 @@ classdef StatsLib
                     end
                 end
                 
-                function [dataM] = GenerateFreqTableMatrix_DataWithBins(classBoundsM, data)
-                    dataM = [classBoundsM, CalcFreqsFromDataWithClassBounds(classBoundsM, data)];
+                function [dataM] = GenerateFreqTableMatrix_DataWithBins(data, classBoundsM)
+                    dataM = [classBoundsM, CalcFreqsFromDataWithClassBounds(data, classBoundsM)];
                 end
                 
                 function [dataM] = GenerateCompleteFreqTableMatrix_DataWithBins(classBoundsM, data)
@@ -686,7 +894,9 @@ classdef StatsLib
                     %		-percentileVal{dataType} => 
                     
                     dataSorted = sort(data);
-                    percentileVal = (numel(find(dataSorted<val)) ./ numel(data)) .* 100;
+                    valueIndices = find(data == val); %Need to compensate for multiple hits of the value, start at first occurence always
+                    percentileVal = numel(dataSorted(1:valueIndices(1)))./ numel(data) .* 100;
+                    %percentileVal = (numel(find(dataSorted<val)) ./ numel(data)) .* 100;
                 end
 
                 function percentileIndex = CalcPercentileIndex(percentileWeWant, data)
@@ -703,7 +913,8 @@ classdef StatsLib
                         percentileUsing = percentileWeWant;
                     end
 
-                    percentileIndex = round((percentileUsing ./ 100) .* numel(data),0) + 1;
+                    percentileIndex = (percentileUsing ./ 100) .* numel(data);
+                    % remeber if output is a whole number, the value corresponding to it is between the two values in the array
                 end
 
                 function valueCorresponding2Percentile = CalcValueOfPercentile(percentileWeWant, data)
@@ -715,7 +926,12 @@ classdef StatsLib
                     %		-valueCorresponding2Percentile{dataType} => 
                     
                     dataSorted = sort(data);
-                    valueCorresponding2Percentile = dataSorted(StatsLib.CalcPercentileIndex(percentileWeWant, data));
+                    indexVal = StatsLib.CalcPercentileIndex(percentileWeWant, data);
+                    if abs(indexVal - round(indexVal,0)) > 0
+                        valueCorresponding2Percentile = dataSorted(round(indexVal,0));
+                    else
+                        valueCorresponding2Percentile = (dataSorted(indexVal) + dataSorted(indexVal+1)) ./ 2;
+                    end
                 end
 
             %Locator formula
@@ -770,7 +986,11 @@ classdef StatsLib
 
                     output = [min(data), dataQ1, dataMedian, dataQ3, max(data)];
                 end
-            
+
+                function [output] = Calc5NumberSummary(data)
+                    output = StatsLib.CalcQuartiles(data);
+                end
+
                 function [output] = CalcIQR(data)
                     %CalcIQR() calculate the distance between q3 and q1 of a dataset
                     %	detailed description here
@@ -794,7 +1014,7 @@ classdef StatsLib
                     output = StatsLib.CalcQuartiles(data);
                     output(6) = output(4) - output(2);
                 end
-                
+
                 function [output] = CalcQuartileMetrics_IQRReadableWithIQR(data)
                     container = StatsLib.CalcQuartileMetrics_ALL(data);
                     values = zeros(1,8);
@@ -916,7 +1136,7 @@ classdef StatsLib
             function [empiricalRuleM] = OutputEmpiricalRuleInfoM()
                 empiricalRuleM = {...
                     "-n" -3 -2 -1 0 1 2 3 "n";...
-                    0.15 2.35 13.5 34 0 34 13.5 2.35 0.15};
+                    0.135 2.14 13.59 34.13 0 34.13 13.59 2.14 0.135};
             end
 
             function [normalDistBoundaries] = CalcNormalDistBorderValues(data, sampleSet) 
@@ -1000,6 +1220,19 @@ classdef StatsLib
             %kurtosis function here
 
         % C4 - Probability Distributions
+            % General Probability Functions
+                function PofABar = CalcComplement(PofA) % Ch4
+                    %CalcComplement() | Calculates complement of probability input
+                    %	Calculates the complement of the probability of event A ocurring of input in format P(A)
+                    %   P(A) + P(A_bar) = 1.00
+                    %	Inputs:
+                    %		-PofA{dataType} => 
+                    %	Outputs:
+                    %		-PofABar{dataType} => 
+                    
+                    PofABar = 1 - PofA;
+                end
+
             %Probability Histogram Functions
                 function isValid = VerifyProbabilityDistribution_FROM_probVect(probVect)
                     isValid = false;
@@ -1068,7 +1301,7 @@ classdef StatsLib
 
                 function [output] = GenerateProbDistTableM_FROM_FreqTableMatrix(freqTableM)
                     %GenerateProbabilityDistributionTable_Matrix() short explanation here
-                    %	detailed description here
+                    %	Probability distribution is just frequency of event / sum of all outcomes so: sum(freqsOfAllBins)
                     %	Inputs:
                     %       needs to be updated to accept all the possible freqTableM
                     %		-input{dataType} => 
@@ -1122,7 +1355,7 @@ classdef StatsLib
                 end
                 
                 function output = CalcProbDist_StdDev(input)
-                    %Calc_ProbDist_StdDe() short explanation here
+                    %Calc_ProbDist_StdDev() short explanation here
                     %	detailed description here
                     %	Inputs:
                     %		-input{dataType} => 
@@ -1130,24 +1363,6 @@ classdef StatsLib
                     %		-[output]{dataType} => 
                     
                     output = sqrt(StatsLib.CalcProbDist_Variance(input));
-                end
-
-                function stdDevFreqTable = CalcStdDev_OFFreqTable(classBounds, classFreqs)
-                    %CalcProbDist_FreqTableStdDev() | short explanation here
-                    %	detailed description here
-                    %	Inputs:
-                    %		-classBounds, classFreqs{dataType} => 
-                    %	Outputs:
-                    %		-stdDevFreqTable{float} => 
-                
-                    % THIS IS FOR SAMPLES NOT POPULATIONS
-
-                    classMidpoints = StatsLib.CalcClassMidpoints(classBounds);
-                    numSamples = sum(classFreqs);
-                    sumFreqTimesMidpoint = sum(classMidpoints .* classFreqs);
-                    sumFreqTimesMidpointSquared = sum(classMidpoints.^2 .* classFreqs);
-                    varianceValue = (sumFreqTimesMidpointSquared - (sumFreqTimesMidpoint.^2 ./ numSamples)) ./ (numSamples - 1); %change this to numSamples from (numSamples - 1) for populations
-                    stdDevFreqTable = sqrt(varianceValue);
                 end
 
                 function [output] = CalcProbDist_AllStatMeasures(input)
@@ -1309,7 +1524,28 @@ classdef StatsLib
                     end
                     
                 %Compare Z-Scores
-                    function [zScoresVect] = CompareZScores(inputMatrix)
+                    function [zScoresVect] = CalcZScores_inputVect(mu,sigma,xVals)
+                        %CompareZscores_inputVects() | calculate Zscores for various x Values
+                        %	Takes single mean and std dev figure and procedurally calculates zScores for all figures
+                        %	Inputs:
+                        %		- input{dataType}  => 
+                        %	Outputs:
+                        %		- output{dataType} => 
+                        
+                        zScoresVect = zeros(size(xVals));
+                        for i = 1:numel(zScoresVect)
+                            zScoresVect(i) = StatsLib.CalcZScore(xVals(i),mu,sigma);
+                        end
+                    end
+                    
+                    function [zScoresM] = CalcZScores_inputXValsMatrixAndMuAndStdDev(inputMatrix, mu, sigma)
+                        zScoresM = zeros(size(inputMatrix));
+                        for i = 1:numel(inputMatrix(:,1))
+                            zScoresVect(i,:) = StatsLib.CalcZScores_inputVect(inputMatrix(i,:));
+                        end
+                    end
+
+                    function [zScoresM] = CalcZScores_inputMatrixContainingAll(inputMatrix)
                         %CompareZScores() | Calculates all ZScores for matrix input
                         %	Calculates Zscores for each row of the input matrix
                         %	Inputs:
@@ -1318,7 +1554,21 @@ classdef StatsLib
                         %		-[zScoresVect]{dataType} => 
                         
                         sizeInputM = size(inputMatrix);
-                        zScoresVect = zeros(sizeInputM(1),1);
+                        zScoresM = zeros(sizeInputM(1),sizeInputM(2)-2);
+                        
+                        for i = 1:numel(inputMatrix(:,1))
+                            zScoresM(i,:) = StatsLib.CalcZScores_inputVect(inputMatrix(i,1),inputMatrix(i,2),inputMatrix(i,3:sizeInputM(2)));
+                        end
+                    end
+
+                    function [zScoresM] = CalcZScores_inputMatrix(inputMatrix, varargin)
+                        if nargin == 1
+                            zScoresM = StatsLib.CalcZScores_inputMatrixContainingAll(inputMatrix);
+                        elseif nargin == 3
+                            zScoresM = StatsLib.CalcZScores_inputXValsMatrixAndMuAndStdDev(inputMatrix,varargin{1},varargin{2});
+                        else
+                            error('StatsLib.CalcZScores_inputMatrix() | Number of inputs not allowed.\nPlease input 1 matrix containing means and std dev as first two columns, or an input Matrix of x values followed by the mu and std dev value associated')
+                        end
                     end
 
                 %Calc x from Z-score
@@ -1394,16 +1644,16 @@ classdef StatsLib
 						%Main math execution
 						if strcmp(direction,"left") || strcmp(direction,"right")
 							if (zScore == 0)
-                            	output = 0.5;
-                        	elseif (zScore > 0)
-                            	Xs = 0:resolution:zScore; %make it so that if negative calculates from center out always then reverses to find values from left always
-                            	Ys = probFunc(Xs);
+                                output = 0.5;
+                            elseif (zScore > 0)
+                                Xs = 0:resolution:zScore; %make it so that if negative calculates from center out always then reverses to find values from left always
+                                Ys = probFunc(Xs);
 								output = 0.5 + (trapz(Ys)./(10.^resolutionCounter)); %trapz area division has to be done according to how many samples on the x plane
 							elseif (zScore < 0)
-                            	Xs = zScore:resolution:0;
-                            	Ys = probFunc(Xs);
-                            	output = 0.5 - (trapz(Ys)./(10.^resolutionCounter)); %
-                        	end
+                                Xs = zScore:resolution:0;
+                                Ys = probFunc(Xs);
+                                output = 0.5 - (trapz(Ys)./(10.^resolutionCounter)); %
+                            end
 
 							if strcmp(direction,"right")
 								output = 1 - output;
