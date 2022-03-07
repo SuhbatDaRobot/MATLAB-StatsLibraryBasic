@@ -199,6 +199,21 @@ classdef StatsLib
                 end
             end
 
+            function [output] = Check5PercentRule(sampleSize, sampleSpace)
+                %Check5PercentRule() | Check if data set matches requirements for 5 percent rul
+                %	The 5 percent rule states that if the sample size is smaller than 5 percent of the sample space, then the trials, even if not independent, can be treated as independent
+                %	Inputs:
+                %		-sampleSize, sampleSpace{dataType} => 
+                %	Outputs:
+                %		-[output]{dataType} => 
+                
+                if sampleSize <= (sampleSpace .* 0.05)
+                    output = true;
+                else
+                    output = false;
+                end
+            end
+
         %Basic Data Manipulations
             function [outputList] = SortList_ascending(inputList)
                 %SortList_ascending() sort left to right, least to most
@@ -1288,6 +1303,18 @@ classdef StatsLib
                     oddsRatio = (probExp ./ (1 - probExp)) ./ (probPlacebo./ (1 - probPlacebo));
                 end
 
+                function [output] = CalcProbExpectedValue(probWin,cost2Play,maxWin)
+                    %CalcProbExpectedValue() | Calculate expected win amount for law of large amounts or average cost
+                    %	Calculate value of cost to play normalized to the chance of winnings
+                    %	Inputs:
+                    %		-probWin,cost2Play,maxWin{dataType} => 
+                    %	Outputs:
+                    %		-[output]{dataType} => 
+                    
+                    probLoss = 1 - probWin;
+                    output = sum([maxWin .* probWin, -1.*probLoss.*cost2Play]);
+                end
+
             %Probability Histogram/Table Functions
                 function isValid = VerifyProbabilityDistribution_FROM_probVect(probVect)
                     isValid = false;
@@ -1486,7 +1513,7 @@ classdef StatsLib
         % 4.2 - Binomial Distributions
             %Calculate Binomial Probabilities
                 function output = CalcBinomialProbability_base(p,n,x)
-                    output = nchoosek(n,x) .* p.^x .* (1-p).^(n-x);
+                    output = vpa(nchoosek(n,x) .* p.^x .* (1-p).^(n-x));
                 end
 
                 function [output] = CalcBinomialProbability(p,n,x, varargin)
@@ -1542,6 +1569,26 @@ classdef StatsLib
                         end
                 end
                 
+            %Binomial Probabilty of Sequence of Events
+                function probability = CalcBinomialProbOfSequenceOfEvents(probEvent,sequenceVect)
+                    %CalcBinomialProbOfSequenceOfEvents() | short explanation here
+                    %	detailed description here
+                    %	Inputs:
+                    %		-probEvent,sequenceVect{dataType} => 
+                    %	Outputs:
+                    %		-probabilty{dataType} => 
+                    
+                    probLoss = 1 - probEvent;
+                    probability = 1;
+                    for i = 1:numel(sequenceVect)
+                        if sequenceVect(i) == true
+                            probability = vpa(probability .* probEvent);
+                        else
+                            probability = vpa(probability .* probLoss);
+                        end
+                    end
+                end
+
             %Binomial Probability between values
                 function probVal = CalcBinomialProbabilityBetweenXvals(p,n,xVal1,xVal2)
                     probVal = 0;
@@ -1568,28 +1615,42 @@ classdef StatsLib
 				end
 
             %Binomial Central tendencies
+                % TODO: ADD VPA ARGUMENT TO FUNCTIONS
                 function binomAvg = CalcBinomialMean(p,n)
                 %CalcBinomialMean - calculate binomial distribution mean
                 %
                 % Syntax: binomAvg = CalcBinomialMean(p,n)
                 %
                 % Long description
-                    binomAvg = n .* p;
+                    binomAvg = vpa(n .* p);
                 end
 
                 function output = CalcBinomialVariance(p,n)
-                    output = n .* p .* (1-p);
+                    output = vpa(n .* p .* (1-p));
                 end
 
                 function output = CalcBinomialStdDev(p,n)
-                    output = sqrt(StatsLib.CalcBinomialVariance(p,n));
+                    output = vpa(sqrt(StatsLib.CalcBinomialVariance(p,n)));
                 end
 
                 function [output] = CalcBinomialCentralTendencies_ALL(p,n)
-                    output = zeros(1,3);
+                    output = vpa(zeros(1,3));
                     output(1) = StatsLib.CalcBinomialMean(p,n);
                     output(2) = StatsLib.CalcBinomialVariance(p,n);
                     output(3) = StatsLib.CalcBinomialStdDev(p,n);
+                end
+
+                function [lowerVal, upperVal] = CalcBinomialUsualValueBounds_listOutput(p,n)
+                    mu = StatsLib.CalcBinomialMean(p,n);
+                    sigma = StatsLib.CalcBinomialStdDev(p,n);
+
+                    lowerVal = mu - 2 .* sigma;
+                    upperVal = mu + 2 .* sigma;
+                end
+
+                function [boundaryVals] = CalcBinomialUsualValueBounds_vectOutput(p,n)
+                    [lowerVal, upperVal] = StatsLib.CalcBinomialUsualValueBounds_listOutput(p,n);
+                    boundaryVals = [lowerVal, upperVal];
                 end
 
         % C5 - Normal Distributions
