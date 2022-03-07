@@ -460,6 +460,14 @@ classdef StatsLib
             end
             
             function estimatedStdDev = CalcEstimatedDevUsingRangeRuleOfThumb(data)
+                %CalcEstimatedDevUsingRangeRuleOfThumb() | Using range rule of thumb, estimate std dev vs actually calculating it
+                %	You can estimate the value of the std dev of a normal data set using the range and some division
+                %	Inputs:
+                %		- input{dataType}  => 
+                %	Outputs:
+                %		- output{dataType} => 
+                
+                
                 estimatedStdDev = range(data) ./ 4;
             end
 
@@ -1232,8 +1240,55 @@ classdef StatsLib
                     
                     PofABar = 1 - PofA;
                 end
+                
+                function probability = CalcProbability(occurences, N)
+                    probability = occurences ./ N;
+                end
 
-            %Probability Histogram Functions
+                function probability = CalcProbability_inputVect(dataVect)
+                    %CalcProbability_inputVect() | Calculate probability of event from the data vect
+                    %	
+                    %	Inputs:
+                    %		- dataVect{int}    =>
+                    %	Outputs:
+                    %		- output{dataType} => 
+                    
+                    hitIndex = 2; sampleCountIndex = 1;
+                    if dataVect(2) > dataVect(1)
+                        hitIndex = 1;
+                        sampleCountIndex = 2;
+                    end
+                    probability = StatsLib.CalcProbability(dataVect(hitIndex), dataVect(sampleCountIndex));
+                end
+
+                function [probabilities] = CalcProbability_inputM(dataM)
+                    %need to check orientation and work with it
+                    sizeM = size(dataM);
+                    probabilities = zeros(sizeM(1),1); %orientation wrong can fry this line
+                    for i = 1:sizeM(1)
+                        probabilities(i) = StatsLib.CalcProbability_inputVect(dataM(i,:)); %this line is also orientation dependent
+                    end
+                end
+
+                function relRisk = CalcRelativeRisk(expVect, placeboVect)
+                    %CalcRelativeRisk() | Calculate the relative risk from data provided
+                    %	detailed description here
+                    %	Inputs:
+                    %		-trailDataM{dataType} => 
+                    %	Outputs:
+                    %		-relRisk{dataType} => 
+                    
+                    relRisk = StatsLib.CalcProbability_inputVect(expVect) ./ StatsLib.CalcProbability_inputVect(placeboVect);
+                end
+
+                function oddsRatio = CalcTreatmentOddsRatio(expVect, placeboVect)
+                    probExp = StatsLib.CalcProbability_inputVect(expVect);
+                    probPlacebo = StatsLib.CalcProbability_inputVect(placeboVect);
+
+                    oddsRatio = (probExp ./ (1 - probExp)) ./ (probPlacebo./ (1 - probPlacebo));
+                end
+
+            %Probability Histogram/Table Functions
                 function isValid = VerifyProbabilityDistribution_FROM_probVect(probVect)
                     isValid = false;
                     freqSum = 0;
@@ -1338,7 +1393,7 @@ classdef StatsLib
 					if sizeInput(1) > sizeInput(2)
                         output = sum(probTableM(:,1).*probTableM(:,2));
                     else
-                        output = sum(probTablem(1,:).*probTableM(2,:));
+                        output = sum(probTableM(1,:).*probTableM(2,:));
                     end
                 end
 
@@ -1363,6 +1418,27 @@ classdef StatsLib
                     %		-[output]{dataType} => 
                     
                     output = sqrt(StatsLib.CalcProbDist_Variance(input));
+                end
+                
+                function [lowerBound, upperBound] = CalcProbDist_UsualValuesUsingRangeRuleOfThumb_listOutput(probTableM)
+                    %ProbDist_CalcUsualValuesUsingRangeRuleOfThumb() | Using stddev value and mean value, calculate usual values
+                    %	Outputs probabilities associated with the usual range of values generated which is defined as mu +/- 2 x sigma
+                    %	Inputs:
+                    %		-probTableM{dataType} => 
+                    %	Outputs:
+                    %		-[usualValueBoundsVect]{dataType} => 
+                    
+                    mu = StatsLib.CalcProbDist_Mean(probTableM);
+                    twoSigma = 2 .* StatsLib.CalcProbDist_StdDev(probTableM);
+                    lowerBound = mu - twoSigma; upperBound = mu + twoSigma;
+                    if lowerBound < 0
+                        lowerBound = 0;
+                    end
+                end
+
+                function [usualValueBoundsVect] = CalcProbDist_UsualValuesUsingRangeRuleOfThumb_vectOutput(probTableM)
+                    [lowerBound, upperBound] = StatsLib.CalcProbDist_UsualValuesUsingRangeRuleOfThumb_listOutput(probTableM);
+                    usualValueBoundsVect = [lowerBound, upperBound];
                 end
 
                 function [output] = CalcProbDist_AllStatMeasures(input)
@@ -1584,8 +1660,12 @@ classdef StatsLib
 					end
 
                 %Probability Function
-                    function output = CalcProb(x)
+                    function output = CalcNormalProb(x)
                         output = (1./sqrt(2.*pi())) .* exp(-1.*(x.^2./2));
+                    end
+
+                    function p_x = CalcGaussianProb(x)
+                        p_x = StatsLib.CalcNormalProb(x);
                     end
 
                 %Probability Density Function
