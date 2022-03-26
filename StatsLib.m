@@ -153,6 +153,32 @@ classdef StatsLib
                 end
             end
             
+            function orientation = CheckOrientation(inputNumericalObject, varargin)
+                % output: int
+                %   0 -> horizontal
+                %   1 -> vertical
+                %   -1 -> error
+
+                orientation = -1;
+                sizeObject = size(inputNumericalObject);
+
+                if sizeObject(1) > sizeObject(2)
+                    orientation = 1;
+                elseif sizeObject(1) < sizeObject(2)
+                    orientation = 0;
+                end
+
+                if nargin > 1
+                    if strcmp(lower(varargin{1}),"human")
+                        if orientation == 1
+                            orientation = "vertical";
+                        elseif orientation == 0
+                            orientation = "horizontal";
+                        end
+                    end
+                end
+            end
+
             function [reorientedContainer] = CorrectOrientation(inputContainer, acceptedOrientations)
                 %CorrectOrientation() | Checks input container orientation and fixes it
                 %	Checks dimensions of container and reorients matrix or vector based on accepted value
@@ -281,7 +307,31 @@ classdef StatsLib
             end
 
             function numUniqueNumbers = CalcNumberUniqueNumbersInArray(dataVect)
-                numUniqueNumbers = numel(StatsLib.Remove)
+                numUniqueNumbers = numel(StatsLib.RemoveDataPointRepeats(dataVect));
+            end
+
+            function printSuccessful = PrintCellContents(cellObject)
+                printSuccessful = 0;
+                
+                for i = 1:numel(cellObject)
+                    disp(cellObject{i});
+                    if i == numel(cellObject)
+                        printSuccessful = 1;
+                    end
+                end
+            end
+
+            function [dataM] = ConvertCellObjectToMatrix_inCellArray(cellArray,varargin)
+                dataM_rowCount = numel(cellArray);
+                dataM_columnCount = numel(cellArray{1});
+
+                dataM = zeros(dataM_rowCount,dataM_columnCount);
+
+                for i = 1:numel(cellArray)
+                    for j = 1:dataM_columnCount
+                        dataM(i,j) = cellArray{i}(j);
+                    end
+                end
             end
 
         %Data Evalulations
@@ -1155,48 +1205,6 @@ classdef StatsLib
                 
             end
 
-        %Normal Distribution Functions
-            function [empiricalRuleM] = OutputEmpiricalRuleInfoM()
-                empiricalRuleM = {...
-                    "-n" -3 -2 -1 0 1 2 3 "n";...
-                    0.135 2.14 13.59 34.13 0 34.13 13.59 2.14 0.135};
-            end
-
-            function [normalDistBoundaries] = CalcNormalDistBorderValues(data, sampleSet) 
-                %need to change dataType to some other variable name to describe sampling distribution widthjhnhjkjhkkjh
-                %add normal distribution shit here
-                dataMean = mean(data);
-                dataStdDev = StatsLib.CalcStdDev(data, sampleSet);
-
-                normalDistBoundaries = [-3 -2 -1 0 1 2 3];
-                normalDistBoundaries = normalDistBoundaries .* dataStdDev;
-                normalDistBoundaries(4) = dataMean;
-            end
-
-			function output = FindOutliersUsingEmpiricalRule_SamplesAndMuAndSigmaAndThreshold(data, mu, sigma, thresholdVal, varargin)
-				output = [];
-				lowerOutliers = [];
-				upperOutliers = [];
-				if nargin > 4
-				else
-					upperBound = mu + thresholdVal .* sigma;
-					lowerBound = mu - thresholdVal .* sigma;
-					upperOutlierIndices = find(data > upperBound);
-					lowerOutlierIndices = find(data < lowerBound);
-
-					%lowerOutliers = [1];
-					%upperOutliers = [];
-					lowerOutliers = data(lowerOutlierIndices);
-					upperOutliers = data(upperOutlierIndices);
-				end
-
-				output = [lowerOutliers, upperOutliers];
-			end
-
-			function [output] = FindOutliersUsingEmpircalRule(data, varargin)
-				
-			end
-
         %Skewing Functions and Kurtosis
             function skewDirection = DetermineDataSkew(data)
                 %DetermineDataSkew() evaluate skew or tail difference from symmetric distribution
@@ -1510,6 +1518,66 @@ classdef StatsLib
                     end
                 end
 
+            % Uniform Distributions
+                function probability = CalcProbDensity_Uniform_inputList(xStart, xEnd, pVal, direction)
+                    %CalcProbDensity_Uniform_inputList() | Calculates probability of event for uniform distributions
+                    %	Generates value for probability of event ocurring using uniform distribution spread width and critical value in addition to direction for integral width
+                    %	Inputs:
+                    %		- input{dataType}  => 
+                    %	Outputs:
+                    %		- output{dataType} => 
+                    
+                    acceptedInputs = ["<",">","=",">=","<=","greater than","lower than", "equal to", "greater", "lower", "equal"];
+                    directionInputValid = StatsLib.CheckUserStringInputValid(direction,acceptedInputs);
+                    
+                    % TODO: Need direction mapping dictionary before all prob dist functions to map natural lanuage inputs to consistent internal navigation commands
+                    directionInternal = direction;
+
+                    if directionInputValid
+                        probability = [];
+                        
+                        probFunc = 1./abs(xEnd-xStart);
+                        probEventExact = pVal .* probFunc;
+                        
+                        if strcmp(directionInternal,"=")
+                            probability = probEventExact;
+                        elseif strcmp(directionInternal,">") || strcmp(directionInternal,">=")
+                            probability = 1 - probEventExact;
+                        elseif strcmp(directionInternal,"<") || strcmp(directionInternal,"<=")
+                            probability = probEventExact;
+                        end
+                    else
+                        error('Provided direction input not allowed, please check description for accepted values.');
+                    end
+                end
+
+                function probability = CalcProbDensity_Uniform_inputVects(xBounds, pBounds, varargin)
+                    xStart = min(xBounds); xEnd = max(xBounds);
+                    probability = [];
+                    
+                    if numel(pBounds) > 1
+                        %disp('Running this section.');
+                        pBoundsUpper = max(pBounds);
+                        pBoundsLower = min(pBounds);
+                        pBoundsUpperProb = StatsLib.CalcProbDensity_Uniform_inputList(xStart,xEnd,pBoundsUpper,"<");
+                        pBoundsLowerProb = StatsLib.CalcProbDensity_Uniform_inputList(xStart,xEnd,pBoundsLower,"<");
+                        probabilityInternal = pBoundsUpperProb - pBoundsLowerProb;
+                    elseif numel(pBounds) == 1
+                        if nargin > 2
+                            probabilityInternal = StatsLib.CalcProbDensity_Uniform_inputList(xStart,xEnd,pBounds(1),direction);
+                        else
+                            error('Not enough inputs.');
+                        end
+                    else
+                        error('Number of probability values to computer makes no sense')
+                    end
+
+                    if numel(probabilityInternal) > 0
+                        probability = probabilityInternal;
+                    end
+                    %disp(probability);
+                end
+
         % 4.2 - Binomial Distributions
             %Calculate Binomial Probabilities
                 function output = CalcBinomialProbability_base(p,n,x)
@@ -1654,14 +1722,56 @@ classdef StatsLib
                 end
 
         % C5 - Normal Distributions
-            % 5.1 - Gaussain or Normal Distributions
+            % 5.1 - Gaussian or Normal Distributions
+                %Empirical Rule Funcs
+                    function [empiricalRuleM] = OutputEmpiricalRuleInfoM()
+                        empiricalRuleM = {...
+                            "-n" -3 -2 -1 0 1 2 3 "n";...
+                            0.135 2.14 13.59 34.13 0 34.13 13.59 2.14 0.135};
+                    end
+
+                    function [normalDistBoundaries] = CalcNormalDistBorderValues(data, sampleSet) 
+                        %need to change dataType to some other variable name to describe sampling distribution widthjhnhjkjhkkjh
+                        %add normal distribution shit here
+                        dataMean = mean(data);
+                        dataStdDev = StatsLib.CalcStdDev(data, sampleSet);
+
+                        normalDistBoundaries = [-3 -2 -1 0 1 2 3];
+                        normalDistBoundaries = normalDistBoundaries .* dataStdDev;
+                        normalDistBoundaries(4) = dataMean;
+                    end
+
+                    function output = FindOutliersUsingEmpiricalRule_SamplesAndMuAndSigmaAndThreshold(data, mu, sigma, thresholdVal, varargin)
+                        output = [];
+                        lowerOutliers = [];
+                        upperOutliers = [];
+                        if nargin > 4
+                        else
+                            upperBound = mu + thresholdVal .* sigma;
+                            lowerBound = mu - thresholdVal .* sigma;
+                            upperOutlierIndices = find(data > upperBound);
+                            lowerOutlierIndices = find(data < lowerBound);
+
+                            %lowerOutliers = [1];
+                            %upperOutliers = [];
+                            lowerOutliers = data(lowerOutlierIndices);
+                            upperOutliers = data(upperOutlierIndices);
+                        end
+
+                        output = [lowerOutliers, upperOutliers];
+                    end
+
+                    function [output] = FindOutliersUsingEmpircalRule(data, varargin)
+                        
+                    end
+                
                 %Calc Z-score
                     function zScore = CalcZScore(x,mu,stdDev)
                         zScore = (x - mu) ./ stdDev;
                     end
                     
                 %Compare Z-Scores
-                    function [zScoresVect] = CalcZScores_inputVect(mu,sigma,xVals)
+                    function [zScoresVect] = CalcZScores_inputList(mu,sigma,xVals)
                         %CompareZscores_inputVects() | calculate Zscores for various x Values
                         %	Takes single mean and std dev figure and procedurally calculates zScores for all figures
                         %	Inputs:
@@ -1678,7 +1788,7 @@ classdef StatsLib
                     function [zScoresM] = CalcZScores_inputXValsMatrixAndMuAndStdDev(inputMatrix, mu, sigma)
                         zScoresM = zeros(size(inputMatrix));
                         for i = 1:numel(inputMatrix(:,1))
-                            zScoresVect(i,:) = StatsLib.CalcZScores_inputVect(inputMatrix(i,:));
+                            zScoresVect(i,:) = StatsLib.CalcZScores_inputList(inputMatrix(i,:));
                         end
                     end
 
@@ -1694,7 +1804,7 @@ classdef StatsLib
                         zScoresM = zeros(sizeInputM(1),sizeInputM(2)-2);
                         
                         for i = 1:numel(inputMatrix(:,1))
-                            zScoresM(i,:) = StatsLib.CalcZScores_inputVect(inputMatrix(i,1),inputMatrix(i,2),inputMatrix(i,3:sizeInputM(2)));
+                            zScoresM(i,:) = StatsLib.CalcZScores_inputList(inputMatrix(i,1),inputMatrix(i,2),inputMatrix(i,3:sizeInputM(2)));
                         end
                     end
 
@@ -1707,10 +1817,33 @@ classdef StatsLib
                             error('StatsLib.CalcZScores_inputMatrix() | Number of inputs not allowed.\nPlease input 1 matrix containing means and std dev as first two columns, or an input Matrix of x values followed by the mu and std dev value associated')
                         end
                     end
+                    
+                    function [xValZScores] = CalcZScores_inputVect_justData(data,varargin)
+                        if nargin == 1
+                            muData = mean(data);
+                            sigmaData = StatsLib.CalcStdDev(data,'sample');
+
+                            xValZScores = zeros(size(data));
+
+                            for i = 1:numel(data)
+                                xValZScores(i) = StatsLib.CalcZScore(data(i),muData,sigmaData);
+                            end
+                            
+                        elseif nargin == 2
+                        else
+                            error('Too many inputs');
+                        end
+                    end
+                    
+                    %Quantile graph here with 95% CI curve plots
 
                 %Calc x from Z-score
-                    function xVal = CalcXvalFromZscore(zScore,mu,stdDev)
+                    function xVal = CalcXvalFromZscore_inList(zScore,mu,stdDev)
                         xVal = zScore .* stdDev + mu;
+                    end
+                    
+                    function xVals = CalcXvalFromZScore_inVect(dataVect)
+                        
                     end
 
                 %Ztable Encode
@@ -1727,6 +1860,10 @@ classdef StatsLib
 
                     function p_x = CalcGaussianProb(x)
                         p_x = StatsLib.CalcNormalProb(x);
+                    end
+
+                    function zScore = CalcZScoreFromProb(gaussProb)
+                        
                     end
 
                 %Probability Density Function
@@ -1847,7 +1984,7 @@ classdef StatsLib
                     end
 
 				%ProbDensity for various xValues or zValues done in sequence
-					function [outputProbDensitys] = CalcProbDensitys_FROM_InputTable(typeContainer, inputM)
+					function [outputProbDensitys] = CalcProbDensities_FROM_InputTable(typeContainer, inputM)
 						%FunctionName() short explanation here
 						%	detailed description here
 						%	Inputs:
@@ -1892,5 +2029,152 @@ classdef StatsLib
                         xVal = Inf; %set output value to something ridiculous for error checking
 						%inverse ProbDensity functions to allow ProbDensity input to output X value
                     end
+
+        % Populations and Samples - Central Limit Theorem
+            %Procedural Sample Cental Limit Value Evalulation
+                function [sampleMeans] = CalcSampleMeans_inputM(sampleM,varargin)
+                    %CalcSampleMeans_inputVect() | Calculates sample means row by row
+                    %	detailed description here
+                    %	Inputs:
+                    %		-sampleM{dataType} => 
+                    %	Outputs:
+                    %		-[sampleMeans]{dataType} => 
+                    
+                    %TODO: Need to run orientation checker or evaluator
+
+                    sampleMeans = zeros(numel(sampleM(:,1)),1);
+
+                    for i = 1:numel(sampleM(:,1))
+                        sampleMeans(i) = mean(sampleM(i,:));
+                    end
+
+                    if nargin > 1
+                        if strcmp(lower(varargin{1}),"sort")
+                            sampleMeans = sort(sampleMeans);
+                        end
+                    end
+                end
+
+                function [sampleVariances] = CalcSampleVariances_inputM(sampleM,varargin)
+                    sampleVariances = zeros(numel(sampleM(:, 1)), 1);
+
+                    for i = 1:numel(sampleM(:, 1))
+                        sampleVariances(i) = StatsLib.CalcVariance_Sample(sampleM(i, :));
+                    end
+
+                    if nargin > 1
+                        if strcmp(lower(varargin{1}),"sort")
+                            sampleVariances = sort(sampleVariances);
+                        end
+                    end
+                end
+
+                function [sampleStdDevs] = CalcSampleStdDevs_inputM(sampleM, varargin)
+                    sampleStdDevs = zeros(numel(sampleM(:, 1)), 1);
+
+                    for i = 1:numel(sampleM(:, 1))
+                        sampleStdDevs(i) = StatsLib.CalcStdDev_Sample(sampleM(i, :));
+                    end
+
+                    if nargin > 1
+                        if strcmp(lower(varargin{1}), "sort")
+                            sampleStdDevs = sort(sampleStdDevs);
+                        end
+                    end
+                end
+
+                function [sampleMedians] = CalcSampleMedians_inputM(sampleM, varargin)
+                    sampleMedians = zeros(numel(sampleM(:, 1)), 1);
+
+                    for i = 1:numel(sampleM(:, 1))
+                        sampleMedians(i) = StatsLib.CalcMedian(sampleM(i, :));
+                    end
+                    
+                    if nargin > 1
+                        if strcmp(lower(varargin{1}), "sort")
+                            sampleMedians = sort(sampleMedians);
+                        end
+                    end
+                end
+
+                function [possibleSamples] = GeneratePossibleCombinations_withRepeats_outCellArray(n, optionVect)
+                    optionVectOrientation = StatsLib.CheckOrientation(optionVect);
+                    numPossibleCombinations = numel(optionVect) .^ n;
+
+                    if optionVectOrientation == 0
+                        possibleSamples = cell(1,numPossibleCombinations);
+                    else
+                        possibleSamples = cell(numPossibleCombinations,1);
+                    end
+
+                    
+                    containerCell = {};
+                    indices = ones(n,1);
+
+                    for i = 1:numPossibleCombinations
+                        containerCell = [];
+
+                        for j = 1:n
+                            containerCell(j) = optionVect(indices(j));
+                            
+                            if j == n
+                                indices(n) = indices(n) + 1;
+                            end
+                        end
+                        possibleSamples{i} = containerCell;
+
+                        for j = 1:numel(indices)
+                            if indices(j) > numel(optionVect)
+                                indices(j-1) = indices(j-1) + 1;
+                                indices(j) = 1;
+                            end
+                        end
+                    end
+                end
+
+                function [possibleSamplesM] = GeneratePossibleCombinations_withRepeats_outMatrix(n, optionVect)
+                    possibleSamplesCellArray = StatsLib.GeneratePossibleCombinations_withRepeats_outCellArray(n, optionVect);
+                    possibleSamplesM = StatsLib.ConvertCellObjectToMatrix_inCellArray(possibleSamplesCellArray);
+                end
+
+                function [hitCountMatrix] = GenerateHitCountMatrix(inputVect)                    
+                    orientation = StatsLib.CheckOrientation(inputVect,"human");
+                    if strcmp(orientation,"horizontal")
+                        
+                    end
+
+                    
+                    for i = 1:numel(internalinputVect)
+                    end
+                end
+
+            % Proportionality Evaluation
+                function sampleZVal = CalcZScoreProportion_inputList(s,n,referenceProportion)
+                    sampleProportion = s ./ n;
+                    sampleZVal = (sampleProportion - referenceProportion) ./ sqrt(referenceProportion.*(1-referenceProportion)./n);
+                end
+
+                function probTrue = CalcProportionTrue_inputList(s,n,referenceProportion,direction)
+                    
+                end
+
+            % Central Limit Theorem
+                function sigmaMapped = MapStdDevUsingCentralLimitTheorem_inputList(sigmaPop,samples)
+                    sigmaMapped = sigmaPop ./ sqrt(samples);
+                end
+
+                function [muSample, sigmaSample] = CalcSampleNormDistKeyValsFromPopVals_inList_outList(muPop,sigmaPop,samples)
+                    muSample = muPop;
+                    sigmaSample = StatsLib.MapStdDevUsingCentralLimitTheorem_inputList(sigmaPop,samples);
+                end
+
+                function [sampleNormDistVals] = CalcSampleNormDistKeyValsFromPopVals_inList_outVect(muPop,sigmaPop,samples)
+                    val1, val2 = StatsLib.CalcSampleNormDistKeyValsFromPopVals_inList_outList(muPop,sigmaPop,samples);
+                    sampleNormDistVals = [val1, val2];
+                end
+
+                function ZScoreOfMap = CalcZScoreOfSampleMeanFromPopulationValues_inList(muCurrent,muPop,sigmaPop,samples)
+                    ZScoreOfMap = (muCurrent - muPop) ./ StatsLib.MapStdDevUsingCentralLimitTheorem_inputList(sigmaPop,samples);
+                end
     end
 end
