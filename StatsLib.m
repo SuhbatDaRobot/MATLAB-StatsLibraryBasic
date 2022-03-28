@@ -153,6 +153,33 @@ classdef StatsLib
                 end
             end
             
+            function outputVect = TurnMatrixIntoVector(dataM,varargin)
+                if nargin == 1
+                    orientation = "horizontal";
+                elseif nargin == 2
+                    orientation = varargin{1};
+                else
+                    error('Number of inputs not accepted.');
+                end
+
+                sizeInputM = size(dataM);
+                lengthVect = sizeInputM(1) .* sizeInputM(2);
+
+                if strcmp(orientation,"horizontal")
+                    outputVect = zeros(1,lengthVect);
+                elseif strcmp(orientation,"vertical")
+                    outputVect = zeros(lengthVect,1);
+                else
+                    error('Input orientation not accepted.\nOnly "horizontal" or "vertical" accepted.');
+                end
+
+                for i = 1:sizeInputM(1)
+                    for j = 1:sizeInputM(2)
+                        outputVect(i-1.*j+j)=dataM(i,j);
+                    end
+                end
+            end
+
             function orientation = CheckOrientation(inputNumericalObject, varargin)
                 % output: int
                 %   0 -> horizontal
@@ -1730,11 +1757,12 @@ classdef StatsLib
                             0.135 2.14 13.59 34.13 0 34.13 13.59 2.14 0.135};
                     end
 
-                    function [normalDistBoundaries] = CalcNormalDistBorderValues(data, sampleSet) 
+                    function [normalDistBoundaries] = CalcEmpiricalBorderValues(data, sampleType) 
                         %need to change dataType to some other variable name to describe sampling distribution widthjhnhjkjhkkjh
                         %add normal distribution shit here
+                        % sampleType: "population" or "sample"
                         dataMean = mean(data);
-                        dataStdDev = StatsLib.CalcStdDev(data, sampleSet);
+                        dataStdDev = StatsLib.CalcStdDev(data, sampleType);
 
                         normalDistBoundaries = [-3 -2 -1 0 1 2 3];
                         normalDistBoundaries = normalDistBoundaries .* dataStdDev;
@@ -1771,7 +1799,7 @@ classdef StatsLib
                     end
                     
                 %Compare Z-Scores
-                    function [zScoresVect] = CalcZScores_inputList(mu,sigma,xVals)
+                    function [zScoresVect] = CalcZScores_inputList(xVals, mu, sigma)
                         %CompareZscores_inputVects() | calculate Zscores for various x Values
                         %	Takes single mean and std dev figure and procedurally calculates zScores for all figures
                         %	Inputs:
@@ -1788,7 +1816,7 @@ classdef StatsLib
                     function [zScoresM] = CalcZScores_inputXValsMatrixAndMuAndStdDev(inputMatrix, mu, sigma)
                         zScoresM = zeros(size(inputMatrix));
                         for i = 1:numel(inputMatrix(:,1))
-                            zScoresVect(i,:) = StatsLib.CalcZScores_inputList(inputMatrix(i,:));
+                            zScoresVect(i,:) = StatsLib.CalcZScores_inputList(inputMatrix(i,:),mu,sigma);
                         end
                     end
 
@@ -1796,7 +1824,7 @@ classdef StatsLib
                         %CompareZScores() | Calculates all ZScores for matrix input
                         %	Calculates Zscores for each row of the input matrix
                         %	Inputs:
-                        %		-inputMatrix{dataType} => 
+                        %		-inputMatrix{dataType} => [mu1, sigma1, xVal1.1, xVal1.2...; mu2 sigma2 xVal2.1 xVal2.2...; ...]
                         %	Outputs:
                         %		-[zScoresVect]{dataType} => 
                         
@@ -1818,7 +1846,7 @@ classdef StatsLib
                         end
                     end
                     
-                    function [xValZScores] = CalcZScores_inputVect_justData(data,varargin)
+                    function [xValZScores] = CalcZScoresForVectFromVect_inList(data,varargin)
                         if nargin == 1
                             muData = mean(data);
                             sigmaData = StatsLib.CalcStdDev(data,'sample');
@@ -1835,6 +1863,50 @@ classdef StatsLib
                         end
                     end
                     
+                    function [ZScores] = CalcZScoresOfMatrixRowsFromMatrixRows_inList(dataM,varargin)
+                        %CalcZScores_inputDataMatrix() | Calculates ZScores of data Matrix row by row, assumes sample
+                        %	detailed description here
+                        %	Inputs:
+                        %		- input{dataType}  => 
+                        %	Outputs:
+                        %		- output{dataType} => 
+                        
+                        if nargin == 1
+                            populationType = "sample";
+                        elseif nargin == 2
+                            populationType = varargin{1};
+                        else
+                            error('Too many inputs');
+                        end
+
+                        ZScores = zeros(size(dataM));
+
+                        for i = 1:numel(dataM(:, 1))
+                            mu = mean(dataM(i, :));
+                            sigma = StatsLib.CalcStdDev(dataM(i,:),populationType);
+                            ZScores(i,:) = StatsLib.CalcZScores_inputList(dataM(i,:),mu,sigma);
+                        end
+                    end
+
+                    function [ZScores] = CalcZScoresOfMatrixFromMatrix_inList(dataM,varargin)
+                        if nargin == 1
+                            populationType = "sample";
+                        elseif nargin == 2
+                            populationType == "population";
+                        else
+                            error("Too many inputs.");
+                        end
+
+                        ZScores = zeros(size(dataM));
+                        
+                        mu = mean(mean(dataM));
+                        sigma = StatsLib.CalcStdDev(StatsLib.TurnMatrixIntoVector(dataM,"horizontal"),populationType);
+                        
+                        for i = 1:numel(dataM)
+                            ZScores(i) = StatsLib.CalcZScore(dataM(i),mu,sigma);
+                        end
+                    end
+
                     %Quantile graph here with 95% CI curve plots
 
                 %Calc x from Z-score
@@ -1842,9 +1914,24 @@ classdef StatsLib
                         xVal = zScore .* stdDev + mu;
                     end
                     
+                    %Xval from ZScore input Vect
                     function xVals = CalcXvalFromZScore_inVect(dataVect)
                         
                     end
+                    
+                    %Xval from input matrix with provided mu and std dev
+
+                    %Xval from matrix with mu and std dev included in matrix
+
+                    %Xval from matrix with mu and std dev for each row included as vectors
+
+                    %Xval from matrix with no mu and std dev included row by row
+
+                    %Xval from matrix of entire matrix with std dev and mu given
+
+                    %Xval from matrix of entire matrix with no std dev and mu
+
+                    %Xval wrapper function with varargin controlling what of above list to run
 
                 %Ztable Encode
 					function [zTableM] = DisplayZTableValues()
@@ -1853,21 +1940,34 @@ classdef StatsLib
 					function ProbDensityValue = FindProbDensityfromZtable(zScore)
 					end
 
-                %Probability Function
-                    function output = CalcNormalProb(x)
-                        output = (1./sqrt(2.*pi())) .* exp(-1.*(x.^2./2));
-                    end
-
-                    function p_x = CalcGaussianProb(x)
-                        p_x = StatsLib.CalcNormalProb(x);
-                    end
-
-                    function zScore = CalcZScoreFromProb(gaussProb)
-                        
-                    end
-
                 %Probability Density Function
-                    function output = CalcProbDensity_zScore(zScore, varargin) %add precision via varargin 
+                    function output = CalcNormalPDFfromZScore(z)
+                        output = (1./sqrt(2.*pi())) .* exp(-1.*(z.^2./2));
+                    end
+
+                    function p_x = CalcGaussianPDFfromZScore(z)
+                        p_x = StatsLib.CalcNormalPDF(z);
+                    end
+
+                    function p_x = CalcNormalPDFfromXval_inList(x,mu,sigma)
+                        p_x = CalcNormalCDF(StatsLib.CalcZScore(x,mu,sigma));
+                    end
+
+                    function p_x = CalcGaussianPDFfromXval_inList(x,mu,sigma)
+                        p_x = StatsLib.CalcNormalPDFfromXval_inList(x,mu,sigma);
+                    end
+
+                    function zVal = CalcZScoreOfPDFProb(probVal)
+                        zVal = sqrt(-2.*log(sqrt(2.*pi).*probVal));
+                    end
+
+                    function xVal = CalcXvalOfPDFProb(probVal,mu,sigma)
+                        zVal = StatsLib.CalcZScoreOfPDFProb(probVal);
+                        xVal = StatsLib.CalcXvalFromZscore_inList(zVal,mu,sigma);
+                    end
+
+                %Cumlative Probability Density Function
+                    function output = CalcNormalCDFfromZScore_trapz_inList(zScore, varargin) %add precision via varargin 
                         syms x probFunc;
                         probFunc(x) = (1./sqrt(2.*pi)) .* exp(-1.*(x.^2 ./ 2));
                         %TRUE ProbDensityF VERSION:
@@ -1959,75 +2059,65 @@ classdef StatsLib
 							output = vpa(output);
                     end
 
-					function output = CalcProbDensity_xVal(xVal, mu, sigma, varargin)
-						zScore0 = StatsLib.CalcZScore(xVal, mu, sigma);
-						
-						if nargin > 3
-							inputArguments = varargin{1:numel(varargin)};
-							output = StatsLib.CalcProbDensity_zScore(zScore0, inputArguments);
-						else
-							output = StatsLib.CalcProbDensity_zScore(zScore0);
-						end
-					end
+                    function probability = CalcNormalCDFOfZScore_inList(zScore,varargin)
+                        if nargin == 1
+                            probability = normcdf(zScore);
+                        elseif nargin == 2
+                            if strcmp(lower(varargin{1}),'lower')
+                                probability = normcdf(zScore);
+                            elseif strcmp(lower(varargin{1}),'upper')
+                                probability = normcdf(zScore,'upper');
+                            end
+                        end
+                    end
+
+                    function cumulativeProb = CalcGaussianCDFOfZScore_inList(z, varargin)
+                        cumulativeProb = StatsLib.CalcNormalCDFOfZScore_inList(z, varargin);
+                    end
+
+                    function cumulativeProb = CalcNormalCDFOfXval_inList(x, mu, sigma, varargin)
+                        cumulativeProb = StatsLib.CalcNormalCDFOfZScore_inList(StatsLib.CalcZScore(x, mu, sigma), varargin{1});
+                    end
+
+                    function cumulativeProb = CalcGaussianOfXval_inList(x, mu, sigma, varargin)
+                        cumulativeProb = StatsLib.CalcNormalCDFOfXval_inList(x, mu, sigma, varargin);
+                    end
+
+                    %Vectorized version of above functions
+
+                    %matrix version of above functions
+
+                    function zScore = CalcZScoreOfCDFProb(gaussProb,varargin)
+                        if nargin == 1
+                            zScore = norminv(gaussProb);
+                        elseif nargin == 2
+                            if strcmp(lower(varargin{1},'left'))
+                                zScore = norminv(gaussProb);
+                            elseif strcmp(lower(varargin{1}),'right')
+                                zScore = -1.*norminv(gaussProb);
+                            end
+                        end
+                    end
+
+                    function xVal = CalcXvalOfCDFProb(gaussProb, mu, sigma)
+                        xVal = StatsLib.CalcXvalFromZscore_inList(StatsLib.CalcZScoreOfCDFProb(gaussProb), mu, sigma);
+                    end
+
+                    %Vectorized versions of above functions
+
+                    %Matricized versions of above functions
 
             % 5.2 - Solving Problems
                 %ProbDensity between two z-Scores
-                    function outputProbDensity = CalcProbDensityBetweenZScores(zScore1, zScore2)
-                        container = [zScore1, zScore2];
-						outputProbDensity = StatsLib.CalcProbDensity_zScore(max(container)) - StatsLib.CalcProbDensity_zScore(min(container));
+                    function outputProbDensity = CalcNormalCDFBetweenZScores_inList(zScore1, zScore2)
+						probs = StatsLib.CalcNormalCDFfromZScore_inList([zScore1 zScore2]);
+                        outputProbDensity = max(probs) - min(probs);
                     end
 
                 %ProbDensity between two x Values
-                    function outputProbDensity = CalcProbDensityBetweenXVals(xVal1, xVal2, mu, sigma)
-                        container = [StatsLib.CalcZScore(xVal1,mu,sigma), StatsLib.CalcZScore(xVal2,mu,sigma)];
-						outputProbDensity = StatsLib.CalcProbDensityBetweenZScores(container(1), container(2));
-                    end
-
-				%ProbDensity for various xValues or zValues done in sequence
-					function [outputProbDensitys] = CalcProbDensities_FROM_InputTable(typeContainer, inputM)
-						%FunctionName() short explanation here
-						%	detailed description here
-						%	Inputs:
-						%		- typeContainer {vector<POINTERS>}          => declaration array outlining columnA types (zscore or xvals) and if xval, mu and sigma following first string
-						%		- inputM        {vector<vector<POINTERS>>}  => table containing natural languange and operations to do in sequence to avoid typing the same command a bunch of times
-						%			example: {Val a Direction ; val b Direction;...}
-						%	Outputs:
-						%		- output{dataType} => 
-						
-						if numel(typeContainer) == 1
-							currentTypeDeclaration = lower(typeContainer(1));
-							acceptableInputs = ["zscores" "zscore" "z scores" "z score"];
-							if StatsLib.CheckUserStringInputValid(currentTypeDeclaration, acceptableInputs)
-								sizeInputContainer = size(inputM);
-								for i = 1:sizeInputContainer(1)
-										
-								end
-							else
-								error('typeContainer declaration incorrect');	
-							end
-						elseif numel(typeContainter) == 3
-							currentTypeDeclaration = lower(typeContainer(1));
-							if StatsLib.CheckUserStringInputValid(currentTypeDeclaration,acceptableInputs)
-								
-							else
-								error('typeContainer type declaration incorrect');
-							end
-						else
-							error('typeContainter input does not follow outlined input format')
-						end
-					end
-
-            % 5.3 - Finding x values and z values from probability values
-                %Percentile to zValue
-                    function zScore = CalcZscoreFromPercentile(percentile, varargin)
-                        zScore = Inf; %Assign fallback value that is impossible
-
-                    end
-            
-                %Percentile to xValue
-                    function xVal = CalcXvalFromPercentile(percentile, mu, sigma, varargin)
-                        xVal = Inf; %set output value to something ridiculous for error checking
-						%inverse ProbDensity functions to allow ProbDensity input to output X value
+                    function outputProbDensity = CalcNormalCDFBetweenXvals_inList(xVal1, xVal2, mu, sigma)
+                        zScores = StatsLib.CalcZScore([xVal1 xVal2],mu,sigma);
+                        outputProbDensity = StatsLib.CalcNormalCDFBetweenZScores_inList(zScores(1),zScores(2));
                     end
 
         % Populations and Samples - Central Limit Theorem
@@ -2097,7 +2187,7 @@ classdef StatsLib
                     end
                 end
 
-                function [possibleSamples] = GeneratePossibleCombinations_withRepeats_outCellArray(n, optionVect)
+                function [possibleSamples] = GenerateCombinations_withRepeats_outCellArray(n, optionVect)
                     optionVectOrientation = StatsLib.CheckOrientation(optionVect);
                     numPossibleCombinations = numel(optionVect) .^ n;
 
@@ -2132,21 +2222,27 @@ classdef StatsLib
                     end
                 end
 
-                function [possibleSamplesM] = GeneratePossibleCombinations_withRepeats_outMatrix(n, optionVect)
-                    possibleSamplesCellArray = StatsLib.GeneratePossibleCombinations_withRepeats_outCellArray(n, optionVect);
+                function [possibleSamplesM] = GenerateCombinations_withRepeats_outMatrix(n, optionVect)
+                    possibleSamplesCellArray = StatsLib.GenerateCombinations_withRepeats_outCellArray(n, optionVect);
                     possibleSamplesM = StatsLib.ConvertCellObjectToMatrix_inCellArray(possibleSamplesCellArray);
                 end
 
                 function [hitCountMatrix] = GenerateHitCountMatrix(inputVect)                    
-                    orientation = StatsLib.CheckOrientation(inputVect,"human");
-                    if strcmp(orientation,"horizontal")
-                        
+                    hitCountMatrix_mainVals = sort(StatsLib.RemoveDataPointRepeats(inputVect));
+
+                    if StatsLib.CheckOrientation(hitCountMatrix_mainVals) == 0
+                        hitCountMatrix_mainVals = hitCountMatrix_mainVals';
                     end
 
-                    
-                    for i = 1:numel(internalinputVect)
+                    hitCountMatrix = zeros(numel(hitCountMatrix_mainVals),2);
+                    hitCountMatrix(:,1) = hitCountMatrix_mainVals;
+
+                    for i = 1:numel(hitCountMatrix(:,1))
+                        hitCountMatrix(i,2) = numel(find(inputVect==hitCountMatrix(i,1)));
                     end
                 end
+
+                %Add probability functions for all central tendency shit here
 
             % Proportionality Evaluation
                 function sampleZVal = CalcZScoreProportion_inputList(s,n,referenceProportion)
