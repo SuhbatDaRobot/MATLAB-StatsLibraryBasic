@@ -2187,6 +2187,7 @@ classdef StatsLib
                     end
                 end
 
+            % Combination Generation Functions
                 function [possibleSamples] = GenerateCombinations_withRepeats_outCellArray(n, optionVect)
                     optionVectOrientation = StatsLib.CheckOrientation(optionVect);
                     numPossibleCombinations = numel(optionVect) .^ n;
@@ -2255,13 +2256,13 @@ classdef StatsLib
                 end
 
             % Central Limit Theorem
-                function sigmaMapped = MapStdDevUsingCentralLimitTheorem_inputList(sigmaPop,samples)
+                function sigmaMapped = CalcStdDevOfSampleUsingCLT_inList(sigmaPop,samples)
                     sigmaMapped = sigmaPop ./ sqrt(samples);
                 end
 
                 function [muSample, sigmaSample] = CalcSampleNormDistKeyValsFromPopVals_inList_outList(muPop,sigmaPop,samples)
                     muSample = muPop;
-                    sigmaSample = StatsLib.MapStdDevUsingCentralLimitTheorem_inputList(sigmaPop,samples);
+                    sigmaSample = StatsLib.CalcStdDevOfSampleUsingCLT_inList(sigmaPop,samples);
                 end
 
                 function [sampleNormDistVals] = CalcSampleNormDistKeyValsFromPopVals_inList_outVect(muPop,sigmaPop,samples)
@@ -2270,7 +2271,11 @@ classdef StatsLib
                 end
 
                 function ZScoreOfMap = CalcZScoreOfSampleMeanFromPopulationValues_inList(muCurrent,muPop,sigmaPop,samples)
-                    ZScoreOfMap = (muCurrent - muPop) ./ StatsLib.MapStdDevUsingCentralLimitTheorem_inputList(sigmaPop,samples);
+                    ZScoreOfMap = (muCurrent - muPop) ./ StatsLib.CalcStdDevOfSampleUsingCLT_inputList(sigmaPop,samples);
+                end
+
+                function probMean = CalcNormalCDFOfSampleZScore(muCurrent,muPop,sigmaPop,samples,varargin)
+                    probMean = normcdf(StatsLib.CalcZScoreOfSampleMeanFromPopulationValues_inList(muCurrent,muPop,sigmaPop,samples),varargin{1});
                 end
     end
 end
