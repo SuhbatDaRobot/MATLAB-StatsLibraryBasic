@@ -1990,11 +1990,13 @@ classdef StatsLib
 										resolution = varargin{i};
 										resolutionCounter = 0;
 										resolutionTemp = resolution;
-										while resolutionTemp < 1
+										
+                                        while resolutionTemp < 1
 											resolutionCounter = resolutionCounter + 1;
 											resolutionTemp = resolutionTemp .* 10.^resolutionCounter;
 										end
-										if resolution < 0.01
+										
+                                        if resolution < 0.01
 											resolutionCounter = resolutionCounter + 1;
 										end
 									end
@@ -2110,7 +2112,7 @@ classdef StatsLib
             % 5.2 - Solving Problems
                 %ProbDensity between two z-Scores
                     function outputProbDensity = CalcNormalCDFBetweenZScores_inList(zScore1, zScore2)
-						probs = StatsLib.CalcNormalCDFfromZScore_inList([zScore1 zScore2]);
+                        probs = StatsLib.CalcNormalCDFfromZScore_inList([zScore1 zScore2]);
                         outputProbDensity = max(probs) - min(probs);
                     end
 
