@@ -175,7 +175,8 @@ classdef StatsLib
 
                 for i = 1:sizeInputM(1)
                     for j = 1:sizeInputM(2)
-                        outputVect(i-1.*j+j)=dataM(i,j);
+                        disp(dataM(i,j));
+                        outputVect((i-1).*sizeInputM(2)+j) = dataM(i,j);
                     end
                 end
             end
@@ -266,6 +267,30 @@ classdef StatsLib
                     output = false;
                 end
             end
+            
+            function printSuccessful = PrintCellContents(cellObject)
+                printSuccessful = 0;
+                
+                for i = 1:numel(cellObject)
+                    disp(cellObject{i});
+                    if i == numel(cellObject)
+                        printSuccessful = 1;
+                    end
+                end
+            end
+
+            function [dataM] = ConvertCellObjectToMatrix_inCellArray(cellArray,varargin)
+                dataM_rowCount = numel(cellArray);
+                dataM_columnCount = numel(cellArray{1});
+
+                dataM = zeros(dataM_rowCount,dataM_columnCount);
+
+                for i = 1:numel(cellArray)
+                    for j = 1:dataM_columnCount
+                        dataM(i,j) = cellArray{i}(j);
+                    end
+                end
+            end
 
         %Basic Data Manipulations
             function [outputList] = SortList_ascending(inputList)
@@ -337,28 +362,15 @@ classdef StatsLib
                 numUniqueNumbers = numel(StatsLib.RemoveDataPointRepeats(dataVect));
             end
 
-            function printSuccessful = PrintCellContents(cellObject)
-                printSuccessful = 0;
+            function groupedData = GroupData(data,varargin)
+                %GroupData() | Sorts numerical data based on leftmost numerical value
+                %	Takes data and groups data based on largest ordinal value until next value in same decimal place
+                %	Inputs:
+                %		-data,varargin{dataType} => 
+                %	Outputs:
+                %		-groupedData{dataType} => 
                 
-                for i = 1:numel(cellObject)
-                    disp(cellObject{i});
-                    if i == numel(cellObject)
-                        printSuccessful = 1;
-                    end
-                end
-            end
-
-            function [dataM] = ConvertCellObjectToMatrix_inCellArray(cellArray,varargin)
-                dataM_rowCount = numel(cellArray);
-                dataM_columnCount = numel(cellArray{1});
-
-                dataM = zeros(dataM_rowCount,dataM_columnCount);
-
-                for i = 1:numel(cellArray)
-                    for j = 1:dataM_columnCount
-                        dataM(i,j) = cellArray{i}(j);
-                    end
-                end
+                
             end
 
         %Data Evalulations
@@ -638,31 +650,31 @@ classdef StatsLib
                 end
             end
 
-        %All measures of variation in a single function
-            function [output] = CalcBaseDataVariationMeasures(data, varargin) %modify to have default value for sampleType using nargin and varargin
-                output = zeros(1,4);
-                output(2) = mean(data);
-                output(1) = range(data);
-                
-                if nargin == 1
-                    output(3) = StatsLib.CalcVariance_Sample(data);
-                    output(4) = sqrt(output(3));
-                elseif nargin == 2
-                    if strcmp(lower(varargin{1}),"population")
-                        output(3) = StatsLib.CalcVariance_Population(data);
-                        output(4) = sqrt(output(3));
-                    elseif strcmp(lower(varargin{1}),"sample")
+            %All measures of variation in a single function
+                function [output] = CalcBaseDataVariationMeasures(data, varargin) %modify to have default value for sampleType using nargin and varargin
+                    output = zeros(1,4);
+                    output(2) = mean(data);
+                    output(1) = range(data);
+                    
+                    if nargin == 1
                         output(3) = StatsLib.CalcVariance_Sample(data);
                         output(4) = sqrt(output(3));
+                    elseif nargin == 2
+                        if strcmp(lower(varargin{1}),"population")
+                            output(3) = StatsLib.CalcVariance_Population(data);
+                            output(4) = sqrt(output(3));
+                        elseif strcmp(lower(varargin{1}),"sample")
+                            output(3) = StatsLib.CalcVariance_Sample(data);
+                            output(4) = sqrt(output(3));
+                        else
+                            error('Sample Type not accepted input value')
+                        end
                     else
-                        error('Sample Type not accepted input value')
+                        error('StatsLib.CalcBaseDataVariationMeasured() | Number of inputs not accepted')
                     end
-                else
-                    error('StatsLib.CalcBaseDataVariationMeasured() | Number of inputs not accepted')
                 end
-            end
 
-        % Using STD DEV for usual values
+        % Using STD DEV to determine usual values
             function [bounds] = CalcUsualValueBounds_inputData(data, varargin)
                 if nargin == 1
                     stdDevData = StatsLib.CalcStdDev_Sample(data);
