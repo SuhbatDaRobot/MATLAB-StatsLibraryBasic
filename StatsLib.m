@@ -748,10 +748,10 @@ classdef StatsLib
                     tableMean = (sum(StatsLib.CalcClassMidpoints(MclassBounds).*vectFreqs)) ./ sum(vectFreqs);
                 end
                 
-				function tableMean = CalcMeanofFreqTable_FreqTableM(freqTableM)
+				function tableMean = CalcMeanOfFreqTable_FreqTableM(freqTableM)
 					classBounds = [freqTableM(:,1), freqTableM(:,2)];
-					tableFreqs = freqTableM(:,3)';
-					tableMean = StatsLib.CalcMeanOfFreqTable(classBounds, tableFreqs);
+					tableFreqs = freqTableM(:,3);
+					tableMean = StatsLib.CalcMeanOfFreqTable_ClassBoundsAndVectFreqs(classBounds, tableFreqs);
 				end
 
                 function binEdges = CalcClassEdges(classBoundsM)
@@ -916,7 +916,7 @@ classdef StatsLib
                     dataCont(:,5) = cumulFreqs;
                     %dataCont(:,6) = classWidthArray;
                 end
-            
+                
                 function [dataM] = GenerateFreqTableDataMatrix_AllDataVects(classBoundsM, freqs, relFreqs, cumulFreqs)
                     dataM = [classBoundsM, freqs, relFreqs, cumulFreqs];
                 end
