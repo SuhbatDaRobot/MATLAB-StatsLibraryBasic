@@ -1131,11 +1131,11 @@ classdef StatsLib
                     container = StatsLib.CalcQuartileMetrics_ALL(data);
                     values = zeros(1,8);
                     values(1) = container(1); %min
-                    values(2) = container(2) - container(6); % lower outlier threshold
+                    values(2) = container(3) - 1.5.*container(6); % lower outlier threshold
                     values(3) = container(2); % Q1
                     values(4) = container(3); % median
                     values(5) = container(4); % Q3
-                    values(6) = container(4) + container(6); % upper outlier threshold
+                    values(6) = container(3) + 1.5.*container(6); % upper outlier threshold
                     values(7) = container(5); % max
                     values(8) = container(6); % IQR
                     %disp('ran');
