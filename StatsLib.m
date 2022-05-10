@@ -2291,5 +2291,30 @@ classdef StatsLib
                 function probMean = CalcNormalCDFOfSampleZScore(muCurrent,muPop,sigmaPop,samples,varargin)
                     probMean = normcdf(StatsLib.CalcZScoreOfSampleMeanFromPopulationValues_inList(muCurrent,muPop,sigmaPop,samples),varargin{1});
                 end
+        
+        % Chapter 8 - Probability Tests
+            % T - tests
+                function tObserved = CalcTtest_Statistic_normalDist(xBar, mu, sigma, n)
+                    %CalcTtest_Statistic_normalDist() | Calculates t observed for t test
+                    %	detailed description here
+                    %	Inputs:
+                    %		- input{dataType}  => 
+                    %	Outputs:
+                    %		- output{dataType} => 
+                    
+                    tObserved = (xBar - mu) ./ (sigma ./ sqrt(n));
+                end
+
+            % P value calculation
+                function pValue = CalcPValue_normalDist(tObserved, n)
+                    %FunctionName() | short explanation here
+                    %	detailed description here
+                    %	Inputs:
+                    %		- input{dataType}  => 
+                    %	Outputs:
+                    %		- output{dataType} => 
+                    
+                    pValue = 1-tcdf(tObserved, n-1);
+                end
     end
 end
