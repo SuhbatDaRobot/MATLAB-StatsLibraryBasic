@@ -2502,21 +2502,14 @@ classdef StatsLib
                 elseif nargin == 3
                     confidenceIntervalKeyVals = StatsLib.CalcSamplePCarrotAndError_usingSampleValues_outArray_inList(X,n,alpha);
                 else
-                    error("Input count incorrect.");
+                    error("Input count incorrect".);
                 end
                 
-                [CI_lowerBound, CI_upperBound] = StatsLib.CalcCIBoundsFromPCarrotAndError_outList_inList(confidenceIntervalKeyVals(1),confidenceIntervalKeyVals(2));
+                [CI_lowerBound, CI_upperBound] = CalcCIBoundsFromPCarrotAndError_outList_inList(confidenceIntervalKeyVals(1),confidenceIntervalKeyVals(2));
             end
 
             function [CIbounds] = CalcSampleCIBounds_usingSampleValues_outArray_inList(X,n,alpha,varargin)
-                if nargin == 4
-                    [a, b] = StatsLib.CalcSampleCIBounds_usingSampleValues_outList_inList(X,n,alpha,varargin{1});
-                elseif nargin == 3
-                    [a, b] = StatsLib.CalcSampleCIBounds_usingSampleValues_outList_inList(X,n,alpha);
-                else
-                    error("Input count incorrect.");
-                end
-                
+                [a , b] = StatsLib.CalcSampleCIBounds_usingSampleValues_outList_inList(X,n,alpha,varargin{1});
                 CIbounds = [a,b];
             end
 
