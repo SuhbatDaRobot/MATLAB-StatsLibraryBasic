@@ -2477,6 +2477,7 @@ classdef StatsLib
                 if nargin == 4
                     marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleValues_inList(X,n,alpha,varargin{1});
                 elseif nargin == 3
+                    marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleValues_inList(X,n,alpha);
                 else
                     error("Input count incorrect");
                     return;
