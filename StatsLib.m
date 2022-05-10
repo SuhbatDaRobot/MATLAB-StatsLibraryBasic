@@ -130,6 +130,10 @@ classdef StatsLib
                 %		- output{dataType} => 
                 
                 %Check matlab functions on how they allow passing of function behavior modifiers and the format by which it is done
+                sizeAllowedInputs = size(allowedFunctionInputs);
+                validatedFunctionArgs = cell(sizeAllowedInputs(1),1);
+
+                %% TODO: Need to create standardized input table format for pass through of what to pass to function output
             end
 
             function [outputM] = TurnVectorIntoMatrix(dataVect, delineationCounter)
@@ -1962,7 +1966,7 @@ classdef StatsLib
                     end
 
                     function p_x = CalcNormalPDFfromXval_inList(x,mu,sigma)
-                        p_x = CalcNormalCDF(StatsLib.CalcZScore(x,mu,sigma));
+                        p_x = StatsLib.CalcNormalPDFfromZScore(StatsLib.CalcZScore(x,mu,sigma));
                     end
 
                     function p_x = CalcGaussianPDFfromXval_inList(x,mu,sigma)
@@ -1979,7 +1983,7 @@ classdef StatsLib
                     end
 
                 %Cumlative Probability Density Function
-                    function output = CalcNormalCDFfromZScore_trapz_inList(zScore, varargin) %add precision via varargin 
+                    function output = CalcNormalCDFOfZScoreUsingTrapz_inList(zScore, varargin) %add precision via varargin 
                         syms x probFunc;
                         probFunc(x) = (1./sqrt(2.*pi)) .* exp(-1.*(x.^2 ./ 2));
                         %TRUE ProbDensityF VERSION:
@@ -2074,12 +2078,23 @@ classdef StatsLib
                     end
 
                     function probability = CalcNormalCDFOfZScore_inList(zScore,varargin)
+                        %% TODO: Add input parsing
+                        allowedInputsTable =    {...
+                                                "boolean", {"upper", "right", ">", ">="};...
+                                                "boolean", {"lower", "left" , "<", "<="};...
+                                                };
+                        
+                        allowedInputsTable1 = ["upper","right", ">", ">=";"lower", "left", "<", "<="];
+
                         if nargin == 1
                             probability = normcdf(zScore);
                         elseif nargin == 2
-                            if strcmp(lower(varargin{1}),'lower')
+                            %User input eval;
+                            %evaluationTable = evaluateUserInputs(varargin, allowedInputsTable)
+                        
+                            if StatsLib.CheckUserStringInputValid(lower(varargin{1}),allowedInputsTable1(2,:))
                                 probability = normcdf(zScore);
-                            elseif strcmp(lower(varargin{1}),'upper')
+                            elseif StatsLib.CheckUserStringInputValid(lower(varargin{1}),allowedInputsTable1(1,:))
                                 probability = normcdf(zScore,'upper');
                             end
                         end
@@ -2090,7 +2105,13 @@ classdef StatsLib
                     end
 
                     function cumulativeProb = CalcNormalCDFOfXval_inList(x, mu, sigma, varargin)
-                        cumulativeProb = StatsLib.CalcNormalCDFOfZScore_inList(StatsLib.CalcZScore(x, mu, sigma), varargin{1});
+                        if nargin == 3
+                            cumulativeProb = StatsLib.CalcNormalCDFOfZScore_inList(StatsLib.CalcZScore(x, mu, sigma));
+                        elseif nargin == 4
+                            cumulativeProb = StatsLib.CalcNormalCDFOfZScore_inList(StatsLib.CalcZScore(x, mu, sigma), varargin{1});
+                        else
+                            error('Too many inputs.')
+                        end
                     end
 
                     function cumulativeProb = CalcGaussianOfXval_inList(x, mu, sigma, varargin)
@@ -2105,16 +2126,20 @@ classdef StatsLib
                         if nargin == 1
                             zScore = norminv(gaussProb);
                         elseif nargin == 2
-                            if strcmp(lower(varargin{1},'left'))
+                            allowedInputsList = ["left", "lower", "<", "<="; "right", "upper", ">", ">="];
+                            
+                            if StatsLib.CheckUserStringInputValid(lower(varargin{1}),allowedInputsList(1,:))
                                 zScore = norminv(gaussProb);
-                            elseif strcmp(lower(varargin{1}),'right')
+                        elseif StatsLib.CheckUserStringInputValid(lower(varargin{1}), allowedInputsList(2, :))
                                 zScore = -1.*norminv(gaussProb);
                             end
+                        else
+                            error('Too many inputs');
                         end
                     end
 
-                    function xVal = CalcXvalOfCDFProb(gaussProb, mu, sigma)
-                        xVal = StatsLib.CalcXvalFromZscore_inList(StatsLib.CalcZScoreOfCDFProb(gaussProb), mu, sigma);
+                    function xVal = CalcXvalOfCDFProb(gaussProb, mu, sigma,varargin)
+                        xVal = StatsLib.CalcXvalFromZscore_inList(StatsLib.CalcZScoreOfCDFProb(gaussProb,varargin{1}), mu, sigma);
                     end
 
                     %Vectorized versions of above functions
@@ -2124,7 +2149,7 @@ classdef StatsLib
             % 5.2 - Solving Problems
                 %ProbDensity between two z-Scores
                     function outputProbDensity = CalcNormalCDFBetweenZScores_inList(zScore1, zScore2)
-                        probs = StatsLib.CalcNormalCDFfromZScore_inList([zScore1 zScore2]);
+                        probs = StatsLib.CalcNormalCDFOfZScore_inList([zScore1 zScore2]);
                         outputProbDensity = max(probs) - min(probs);
                     end
 
@@ -2134,7 +2159,7 @@ classdef StatsLib
                         outputProbDensity = StatsLib.CalcNormalCDFBetweenZScores_inList(zScores(1),zScores(2));
                     end
 
-        % Populations and Samples - Central Limit Theorem
+        % Populations and Samples - Central Limit Theorem | Chapter 6: Normal probability distributions
             %Procedural Sample Cental Limit Value Evalulation
                 function [sampleMeans] = CalcSampleMeans_inputM(sampleM,varargin)
                     %CalcSampleMeans_inputVect() | Calculates sample means row by row
@@ -2259,7 +2284,7 @@ classdef StatsLib
 
                 %Add probability functions for all central tendency shit here
 
-            % Proportionality Evaluation
+            % Proportionality Evaluation - binomial evaluations
                 function sampleZVal = CalcZScoreProportion_inputList(s,n,referenceProportion)
                     sampleProportion = s ./ n;
                     sampleZVal = (sampleProportion - referenceProportion) ./ sqrt(referenceProportion.*(1-referenceProportion)./n);
@@ -2292,6 +2317,162 @@ classdef StatsLib
                     probMean = normcdf(StatsLib.CalcZScoreOfSampleMeanFromPopulationValues_inList(muCurrent,muPop,sigmaPop,samples),varargin{1});
                 end
         
+            % Evaluation of probabilities of events ocurring in sample given population probability | Chapter 6.6
+                % Whole section seems to be moot, chapter 4 above has all binomial calculations    
+
+                % Normal dist
+                    function sampleMean = CalcSampleMeanForExtrapolationViaNormalDist_inList(n,P)
+                        %CalcSampleMeanForExtrapolationViaNormalDist_inList() | short explanation here
+                        %	detailed description here
+                        %	Inputs:
+                        %		-n {int}   => num Samples
+                        %       -P {float} => probability of event, in this case the probability provided
+                        %	Outputs:
+                        %		-[output]{float} => mean of test normal distribution
+                        
+                        sampleMean = n .* P; %Central mean value for probabilistic evaluation
+                    end
+
+                    function sampleStdDev = CalcSampleStdDevForExtrapolationViaNormalDist_inList(n,P)
+                        %CalcSampleStdDevForExtrapolationViaNormalDist_inList() | short explanation here
+                        %	detailed description here
+                        %	Inputs:
+                        %		-input{dataType} => 
+                        %	Outputs:
+                        %		-[output]{dataType} => 
+                        
+                        sampleStdDev = sqrt(n .* P .* (1 - P)); %Std dev for normal distribution for test evaluation
+                    end
+                    
+                    function zScore = CalcZScoreOfValueForExtrapolationViaNormalDist_inList(xVal, n, P)
+                        %CalcXvalOfValueForExtrapolationViaNormalDist_inList() | short explanation here
+                        %	detailed description here
+                        %	Inputs:
+                        %		-xVal, n, P{dataType} => 
+                        %	Outputs:
+                        %		-[output]{dataType} => 
+                        
+                        sampleMu = StatsLib.CalcSampleMeanForExtrapolationViaNormalDist_inList(n,P);
+                        sampleSigma = StatsLib.CalcSampleStdDevForExtrapolationViaNormalDist_inList(n,P);
+                        zScore = StatsLib.CalcZScore(xVal, sampleMu, sampleSigma);
+                    end
+
+                    function probabilityOfXval = CalcNormalCDFOfXvalForExtrapolationViaNormalDist_inList(xVal,n,P,varargin)
+                        %CalcNormalCDFOfZScoreForExtrapolationViaNormalDist_inList() | Calculates the probability of xVal number of people being positive for the probability of property provided
+                        %	Uses binomial projection to calculate the likelihood of the number of xVal within a sample of n values with a probability of population of property described by P to be possible via the use of the normal probability distribution
+                        %	Inputs:
+                        %		-xVal,n,P,varargin{dataType} => 
+                        %	Outputs:
+                        %		-probabilityOfZScore{dataType} => 
+                        
+                        sampleProbMean = n .* P;
+                        q = (1 - P);
+                        sampleSecondaryProbMean = q .* P;
+
+                        if sampleProbMean > 5 && sampleSecondaryProbMean > 5
+                            % Both must be above 5 to maintain sample integrity (need to double check why this is the case)
+                            if nargin == 3
+                                probabilityOfXval = StatsLib.CalcNormalCDFOfZScore_inList(StatsLib.CalcZScoreOfValueForExtrapolationViaNormalDist_inList(xVal, n, P));
+                            elseif nargin == 4
+                                probabilityOfXval = StatsLib.CalcNormalCDFOfZScore_inList(StatsLib.CalcZScoreOfValueForExtrapolationViaNormalDist_inList(xVal, n, P), varargin{1});
+                            else
+                                error("Too many inputs.");
+                            end
+                        else
+                            error('Either sample mean (n x P) or sample alternate mean (q x P) < 5. This is not allowed.');
+                        end
+                    end
+
+                % Binomial Distributions
+                    
+
+        % Confidence Intervals | Chapter 7
+            %Critical Confidence intervals
+                function [critZVal] = FindCriticalZalphaValueForGivenAlpha_inList(alphaValue, varargin)
+
+                    if nargin == 1
+                        divisor = 2;
+                    elseif nargin == 2
+                        divisor = varargin{1};
+                    else
+                        error("Too many inputs");
+                        return;
+                    end
+
+                    prob2Calc = alphaValue ./ divisor;
+                    critZVal = StatsLib.CalcZScoreOfCDFProb(prob2Calc, "upper");
+                end
+            
+            function [pCarrot,E] = CalcPCarrotAndErrorFromCIBounds_outList_inList(lowerBound, upperBound)
+                pCarrot = (lowerBound + upperBound) ./ 2;
+                E = upperBound - pCarrot;
+            end
+
+            function [containerVect] = CalcPCarrotAndErrorFromCIBounds_outArray_inList(lowerBound, upperBound)
+                [a, b] = StatsLib.CalcPCarrotAndErrorFromCIBounds_outList_inList(lowerBound, upperBound);
+                containerVect = [a, b];
+            end
+
+            function [lowerBound, upperBound] = CalcCIBoundsFromPCarrotAndError_outList_inList(pCarrot,errorMargin)
+                lowerBound = pCarrot - errorMargin;
+                upperBound = pCarrot + errorMargin;
+            end
+
+            function [confidenceInterval] = CalcCIBoundsFromPCarrotAndError_outArray_inList(pCarrot, errorMargin)
+                [a,b] = StatsLib.CalcCIBoundsFromPCarrotAndError_outList_inList(pCarrot,marginError);
+                confidenceInterval = [a , b];
+            end
+
+            function [sampleProportion] = CalcSampleProportion_inList(X,n)
+                % sample proportion also known as p-carrot
+                sampleProportion = x ./ n;
+            end
+
+            function [sampleProportion] = CalcPCarrot_inList(X,n)
+                sampleProportion = StatsLib.CalcSampleProportion_inList(X,n);
+            end
+
+            function [sampleError] = CalcSampleError_inList(pCarrot,n)
+                sampleError = sqrt(pCarrot.*(1-pCarrot)./n);
+            end
+
+            function [marginOfError] = CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha,varargin)
+                %alpha is percent left over not actual confidence interval: 
+                %   e.g. 99% would be alpha = 0.01
+                marginOfError = StatsLib.FindCriticalZalphaValueForGivenAlpha_inList(alpha,varargin) .* sampleError;
+            end
+
+            function [marginOfError] = CalcSampleMarginOfError_usingSampleProportion_inList(pCarrot,n,alpha,varargin)
+                sampleError = StatsLib.CalcSampleError_inList(pCarrot,n);
+                marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha,varargin);
+            end
+
+            function [marginOfError] = CalcSampleMarginOfError_usingSampleValues_inList(x,n,alpha,varargin)
+                pCarrot = StatsLib.CalcSampleProportion_inList(x,n);
+                sampleError = StatsLib.CalcSampleError_inList(pCarrot,n);
+                marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha,varargin);
+            end
+
+            function [sampleProportion, marginOfError] = CalcSamplePCarrotAndError_usingSampleValues_outList_inList(X,n,alpha,varargin)
+                marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleValues(X,n,alpha,varargin);
+                sampleProportion = StatsLib.CalcSampleProportion_inList(X,n);
+            end
+
+            function [confidenceIntervalKeyValues] = CalcSamplePCarrotAndError_usingSampleValues_outArray_inList(X,n,alpha,varargin)
+                [a , b] = StatsLib.CalcSamplePCarrotAndError_usingSampleValues_outList_inList(X,n,alpha,varargin);
+                confidenceIntervalKeyValues = [a , b];
+            end
+
+            function [CI_lowerBound, CI_upperBound] = CalcSampleCIBounds_usingSampleValues_outList_inList(X,n,alpha,varargin)
+                confidenceIntervalKeyVals = StatsLib.CalcSamplePCarrotAndError_usingSampleValues_outArray_inList(X,n,alpha,varargin);
+                CalcCIBoundsFromPCarrotAndError_outList_inList(confidenceIntervalKeyVals(1),confidenceIntervalKeyVals(2));
+            end
+
+            function [CIbounds] = CalcSampleCIBounds_usingSampleValues_outArray_inList(X,n,alpha,varagin)
+                [a , b] = StatsLib.CalcSampleCIBounds_usingSampleValues_outList_inList(X,n,alpha,varargin);
+                CIbounds = [a,b];
+            end
+
         % Chapter 8 - Probability Tests
             % T - tests
                 function tObserved = CalcTtest_Statistic_normalDist(xBar, mu, sigma, n)
