@@ -2386,9 +2386,11 @@ classdef StatsLib
                 % Binomial Distributions
                     
 
-        % Confidence Intervals | Chapter 7
+        % Confidence Intervals | Chapter 7: Estimating Parameters and Determining Sample Sizes
             %Critical Confidence intervals
                 function [critZVal] = FindCriticalZalphaValueForGivenAlpha_inList(alphaValue, varargin)
+                    % NOTE: alphaValue is larger proportion not tail end
+                    %           i.e. alpha value for 99% would be 0.99 not 0.01
 
                     if nargin == 1
                         divisor = 2;
@@ -2400,126 +2402,234 @@ classdef StatsLib
                         return;
                     end
 
-                    prob2Calc = alphaValue ./ divisor;
+                    prob2Calc = (1-alphaValue) ./ divisor;
                     critZVal = StatsLib.CalcZScoreOfCDFProb(prob2Calc, "upper");
                 end
             
-            function [pCarrot,E] = CalcPCarrotAndErrorFromCIBounds_outList_inList(lowerBound, upperBound)
-                pCarrot = (lowerBound + upperBound) ./ 2;
-                E = upperBound - pCarrot;
-            end
-
-            function [containerVect] = CalcPCarrotAndErrorFromCIBounds_outArray_inList(lowerBound, upperBound)
-                [a, b] = StatsLib.CalcPCarrotAndErrorFromCIBounds_outList_inList(lowerBound, upperBound);
-                containerVect = [a, b];
-            end
-
-            function [lowerBound, upperBound] = CalcCIBoundsFromPCarrotAndError_outList_inList(pCarrot,errorMargin)
-                lowerBound = pCarrot - errorMargin;
-                upperBound = pCarrot + errorMargin;
-            end
-
-            function [confidenceInterval] = CalcCIBoundsFromPCarrotAndError_outArray_inList(pCarrot, errorMargin)
-                [a,b] = StatsLib.CalcCIBoundsFromPCarrotAndError_outList_inList(pCarrot,errorMargin);
-                confidenceInterval = [a , b];
-            end
-
-            function [sampleProportion] = CalcSampleProportion_inList(X,n)
-                % sample proportion also known as p-carrot
-                sampleProportion = X ./ n;
-            end
-
-            function [sampleProportion] = CalcPCarrot_inList(X,n)
-                sampleProportion = StatsLib.CalcSampleProportion_inList(X,n);
-            end
-
-            function [sampleError] = CalcSampleError_inList(pCarrot,n)
-                sampleError = sqrt(pCarrot.*(1-pCarrot)./n);
-            end
-
-            function [marginOfError] = CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha,varargin)
-                %alpha is percent left over not actual confidence interval: 
-                %   e.g. 99% would be alpha = 0.01
-                if nargin == 3
-                    marginOfError = StatsLib.FindCriticalZalphaValueForGivenAlpha_inList(alpha,varargin{1}) .* sampleError;
-                elseif nargin == 2
-                    marginOfError = StatsLib.FindCriticalZalphaValueForGivenAlpha_inList(alpha) .* sampleError;
-                else
-                    error("Too many inputs.");
+            % Point Estimates, Confidence Intervals, Margins of Error
+                function [pCarrot,E] = CalcPCarrotAndErrorFromCIBounds_outList_inList(lowerBound, upperBound)
+                    pCarrot = (lowerBound + upperBound) ./ 2;
+                    E = upperBound - pCarrot;
                 end
-            end
 
-            function [marginOfError] = CalcSampleMarginOfError_usingSampleProportion_inList(pCarrot,n,alpha,varargin)
-                sampleError = StatsLib.CalcSampleError_inList(pCarrot,n);
-                if nargin == 4
-                    marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha,varargin{1});
-                elseif nargin == 3
-                    marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha);
-                else
-                    error("Input count incorrect.")
+                function [containerVect] = CalcPCarrotAndErrorFromCIBounds_outArray_inList(lowerBound, upperBound)
+                    [a, b] = StatsLib.CalcPCarrotAndErrorFromCIBounds_outList_inList(lowerBound, upperBound);
+                    containerVect = [a, b];
                 end
-            end
 
-            function [marginOfError] = CalcSampleMarginOfError_usingSampleValues_inList(x,n,alpha,varargin)
-                pCarrot = StatsLib.CalcSampleProportion_inList(x,n);
-                sampleError = StatsLib.CalcSampleError_inList(pCarrot,n);
-                
-                if nargin == 4
-                    marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha,varargin{1});
-                elseif nargin == 3
-                    marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha);
-                else
-                    error("Input count incorrect.");
+                function [lowerBound, upperBound] = CalcCIBoundsFromPCarrotAndError_outList_inList(pCarrot,errorMargin)
+                    lowerBound = pCarrot - errorMargin;
+                    upperBound = pCarrot + errorMargin;
                 end
-            end
 
-            function [sampleProportion, marginOfError] = CalcSamplePCarrotAndError_usingSampleValues_outList_inList(X,n,alpha,varargin)
-                if nargin == 4
-                    marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleValues_inList(X,n,alpha,varargin{1});
-                elseif nargin == 3
-                    marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleValues_inList(X,n,alpha);
-                else
-                    error("Input count incorrect");
-                    return;
+                function [confidenceInterval] = CalcCIBoundsFromPCarrotAndError_outArray_inList(pCarrot, errorMargin)
+                    [a,b] = StatsLib.CalcCIBoundsFromPCarrotAndError_outList_inList(pCarrot,errorMargin);
+                    confidenceInterval = [a , b];
                 end
-                sampleProportion = StatsLib.CalcSampleProportion_inList(X,n);
-            end
 
-            function [confidenceIntervalKeyValues] = CalcSamplePCarrotAndError_usingSampleValues_outArray_inList(X,n,alpha,varargin)
-                if nargin == 4
-                    [a, b] = StatsLib.CalcSamplePCarrotAndError_usingSampleValues_outList_inList(X,n,alpha,varargin{1});
-                elseif nargin == 3
-                    [a, b] = StatsLib.CalcSamplePCarrotAndError_usingSampleValues_outList_inList(X,n,alpha);
-                else
-                    error("Input count incorrect.");
+                function [sampleProportion] = CalcSampleProportion_inList(X,n)
+                    % sample proportion also known as p-carrot
+                    sampleProportion = X ./ n;
+                end
+
+                function [sampleProportion] = CalcPCarrot_inList(X,n)
+                    % Pcarrot is actually named sample proportion
+                    sampleProportion = StatsLib.CalcSampleProportion_inList(X,n);
+                end
+
+                function [sampleError] = CalcSampleError_givenProportionAndN_inList(sampleProportion,n)
+                    sampleError = sqrt(sampleProportion.*(1-sampleProportion)./n);
+                end
+
+                function [sampleError] = CalcSampleError_givenPCarrotAndN_inList(pCarrot,n)
+                    sampleError = StatsLib.CalcSampleError_givenProportionAndN_inList(pCarrot,n);
+                end
+
+                function [sampleError] = CalcSampleError_givenStdDevAndN_inList(sigma,n)
+                    sampleError = sigma ./ sqrt(n);
+                end
+
+                function [marginOfError] = CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha,varargin)
+                    if nargin == 3
+                        ZalphaCrit = StatsLib.FindCriticalZalphaValueForGivenAlpha_inList(alpha,varargin{1});
+                        marginOfError =  ZalphaCrit .* sampleError;
+                    elseif nargin == 2
+                        ZalphaCrit = StatsLib.FindCriticalZalphaValueForGivenAlpha_inList(alpha);
+                        marginOfError =  ZalphaCrit .* sampleError;
+                    else
+                        error("Too many inputs.");
+                    end
+                end
+
+                function [marginOfError] = CalcSampleMarginOfError_usingSampleProportion_inList(pCarrot,n,alpha,varargin)
+                    sampleError = StatsLib.CalcSampleError_givenProportionAndN_inList(pCarrot,n);
+                    
+                    if nargin == 4
+                        marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha,varargin{1});
+                    elseif nargin == 3
+                        marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha);
+                    else
+                        error("Input count incorrect.")
+                        return;
+                    end
                 end
                 
-                confidenceIntervalKeyValues = [a , b];
-            end
+                function [marginOfError] = CalcSampleMarginOfError_usingStdDevAndN_inList(sigma,n,alpha,varargin)
+                    sampleError = StatsLib.CalcSampleMarginOfError_usingStdDevAndN_inList(sigma,n);
+                    
+                    if nargin == 4
+                        marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha,varargin{1});
+                    elseif nargin == 3
+                        marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha);
+                    else
+                        error("Input count incorrect.");
+                        return;
+                    end
+                end
 
-            function [CI_lowerBound, CI_upperBound] = CalcSampleCIBounds_usingSampleValues_outList_inList(X,n,alpha,varargin)
-                if nargin == 4
-                    confidenceIntervalKeyVals = StatsLib.CalcSamplePCarrotAndError_usingSampleValues_outArray_inList(X,n,alpha,varargin{1});
-                elseif nargin == 3
-                    confidenceIntervalKeyVals = StatsLib.CalcSamplePCarrotAndError_usingSampleValues_outArray_inList(X,n,alpha);
-                else
-                    error("Input count incorrect.");
+                function [marginOfError] = CalcSampleMarginOfError_usingSampleValues_inList(x,n,alpha,varargin)
+                    pCarrot = StatsLib.CalcSampleProportion_inList(x,n);
+                    sampleError = StatsLib.CalcSampleError_givenProportionAndN_inList(pCarrot,n);
+                    
+                    if nargin == 4
+                        marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha,varargin{1});
+                    elseif nargin == 3
+                        marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha);
+                    else
+                        error("Input count incorrect.");
+                    end
+                end
+
+                function [sampleProportion, marginOfError] = CalcSamplePCarrotAndMoE_usingSampleValues_outList_inList(X,n,alpha,varargin)
+                    if nargin == 4
+                        marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleValues_inList(X,n,alpha,varargin{1});
+                    elseif nargin == 3
+                        marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleValues_inList(X,n,alpha);
+                    else
+                        error("Input count incorrect");
+                        return;
+                    end
+                    sampleProportion = StatsLib.CalcSampleProportion_inList(X,n);
+                end
+
+                function [confidenceIntervalKeyValues] = CalcSamplePCarrotAndMoE_usingSampleValues_outArray_inList(X,n,alpha,varargin)
+                    if nargin == 4
+                        [a, b] = StatsLib.CalcSamplePCarrotAndMoE_usingSampleValues_outList_inList(X,n,alpha,varargin{1});
+                    elseif nargin == 3
+                        [a, b] = StatsLib.CalcSamplePCarrotAndMoE_usingSampleValues_outList_inList(X,n,alpha);
+                    else
+                        error("Input count incorrect.");
+                    end
+                    
+                    confidenceIntervalKeyValues = [a , b];
+                end
+
+                function [CI_lowerBound, CI_upperBound] = CalcSampleCIBounds_usingSampleValues_outList_inList(X,n,alpha,varargin)
+                    if nargin == 4
+                        confidenceIntervalKeyVals = StatsLib.CalcSamplePCarrotAndMoE_usingSampleValues_outArray_inList(X,n,alpha,varargin{1});
+                    elseif nargin == 3
+                        confidenceIntervalKeyVals = StatsLib.CalcSamplePCarrotAndMoE_usingSampleValues_outArray_inList(X,n,alpha);
+                    else
+                        error("Input count incorrect.");
+                    end
+                    
+                    [CI_lowerBound, CI_upperBound] = StatsLib.CalcCIBoundsFromPCarrotAndError_outList_inList(confidenceIntervalKeyVals(1),confidenceIntervalKeyVals(2));
+                end
+
+                function [CIbounds] = CalcSampleCIBounds_usingSampleValues_outArray_inList(X,n,alpha,varargin)
+                    if nargin == 4
+                        [a, b] = StatsLib.CalcSampleCIBounds_usingSampleValues_outList_inList(X,n,alpha,varargin{1});
+                    elseif nargin == 3
+                        [a, b] = StatsLib.CalcSampleCIBounds_usingSampleValues_outList_inList(X,n,alpha);
+                    else
+                        error("Input count incorrect.");
+                    end
+                    
+                    CIbounds = [a,b];
+                end
+
+                function [n] = CalcSampleSize_givenCIandMoE_inList(CI,MoE,varargin)
+                    %varargin can accept pCarrot value, or sample proportion input
+
+                    pCarrot = 0;
+                    
+                    if nargin == 2
+                        pCarrot = 0.5;
+                    elseif nargin == 3
+                        pCarrot = varargin{1};
+                    else
+                        error("Too many inputs.")
+                        return;
+                    end
+
+                    % Equation is rearranged version of MoE equation:
+                    % MoE = ZalphaCrit/2 .* SampleError
+                    % MoE = ZalphaCrit/2 .* (pCarrot*(1-pCarrot)/n)
+                    %n = SampleProportion x (1-SampleProportion) / (MarginOfError / ZalphaCrit/2)^2;
+                    n = pCarrot.*(1-pCarrot)./(MoE./norminv((1-CI)./2)).^2;
+                end
+            
+            % Construction of Confidence intervals using data | Chapter 7.2
+                function [ChiSquaredVal] = CalcChiSquared_givenPandN_inList(P,n,varargin)
+                    % varargin can be used to disclose degrees of freedom, default DoF = n - 1
+                    %   input: f = {int} value of degree of freedom for chi2inv func (is not n - inputVal)
+                    
+                    degOfFreedom = n;
+
+                    if nargin == 2
+                        degOfFreedom = n - 1;
+                    elseif nargin == 3
+                        degOfFreedom = varargin{1};
+                    else
+                        error("Number of inputs incorrect.");
+                        return;
+                    end
+
+                    inputP = 1 - P; %for some reason need to inverse the probability value
+                    ChiSquaredVal = chi2inv(inputP, degOfFreedom);
                 end
                 
-                [CI_lowerBound, CI_upperBound] = StatsLib.CalcCIBoundsFromPCarrotAndError_outList_inList(confidenceIntervalKeyVals(1),confidenceIntervalKeyVals(2));
-            end
+                function [ChiSquaredForAlpha_lowerVal, ChiSquaredForAlpha_upperVal] = CalcChiSquaredCritBoundVals_givenCI_outList_inList(CI, n, varargin)
+                    % TODO: Need to fix varargin order acceptance
+                    degOfFreedom = n;
+                    divisor = 2;
 
-            function [CIbounds] = CalcSampleCIBounds_usingSampleValues_outArray_inList(X,n,alpha,varargin)
-                if nargin == 4
-                    [a, b] = StatsLib.CalcSampleCIBounds_usingSampleValues_outList_inList(X,n,alpha,varargin{1});
-                elseif nargin == 3
-                    [a, b] = StatsLib.CalcSampleCIBounds_usingSampleValues_outList_inList(X,n,alpha);
-                else
-                    error("Input count incorrect.");
+                    if nargin == 2
+                        degOfFreedom = n - 1;
+                    elseif nargin == 3
+                        degOfFreedom = varargin{1};
+                    elseif nargin == 4
+                        degOfFreedom = varargin{1};
+                        divisor = varargin{2};
+                    else
+                        error("Number of inputs incorrect.");
+                        return;
+                    end
+
+                    CI_tailwidth = (1-CI) ./ divisor;
+                    alphaLeft = CI_tailwidth;
+                    alphaRight = (1-CI_tailwidth);
+
+                    ChiSquaredForAlpha_lowerVal = StatsLib.CalcChiSquared_givenPandN_inList(alphaLeft,n,degOfFreedom);
+                    ChiSquaredForAlpha_upperVal = StatsLib.CalcChiSquared_givenPandN_inList(alphaRight,n,degOfFreedom);
                 end
-                
-                CIbounds = [a,b];
-            end
+
+                function [ChiSquaredForAlpha_lowerVal, ChiSquaredForAlpha_upperVal] = CalcChiSquaredCritBoundVals_givenAlpha_outList_inList(alpha,n,varargin)
+                    
+                end
+
+                function [ChiSquaredForAlphaVals] = CalcChiSquaredCritBoundVals_givenCI_outArray_inList(CI,n,varargin)
+                    
+                end
+
+                function [ChiSquaredForAlphaVals] = CalcChiSquaredCritBoundVals_givenAlpha_outArray_inList(alpha,n,varargin)
+                end
+
+                function [] = CalcStdDevCIlowerBound_usingNAndStdDev(N,sigma,varargin)
+                    %varargin can be used to disclose degrees of freedom, default DoF = n - 1
+                    %   input: f = int >= 0
+
+                end
 
         % Chapter 8 - Probability Tests
             % T - tests
