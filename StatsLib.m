@@ -2451,7 +2451,7 @@ classdef StatsLib
 
                 function [marginOfError] = CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha,varargin)
                     if nargin == 3
-                        ZalphaCrit = StatsLib.FindCriticalZalphaValueForGivenAlpha_inList(alpha,varargin{1});
+                        ZalphaCrit = StatsLib.FindCriticalZalphaValueForGivenAlpha_inList(alpha,varargin{1:numel(varargin)});
                         marginOfError =  ZalphaCrit .* sampleError;
                     elseif nargin == 2
                         ZalphaCrit = StatsLib.FindCriticalZalphaValueForGivenAlpha_inList(alpha);
@@ -2465,7 +2465,7 @@ classdef StatsLib
                     sampleError = StatsLib.CalcSampleError_givenProportionAndN_inList(pCarrot,n);
                     
                     if nargin == 4
-                        marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha,varargin{1});
+                        marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha,varargin{1:numel(varargin)});
                     elseif nargin == 3
                         marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha);
                     else
@@ -2478,7 +2478,7 @@ classdef StatsLib
                     sampleError = StatsLib.CalcSampleMarginOfError_usingStdDevAndN_inList(sigma,n);
                     
                     if nargin == 4
-                        marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha,varargin{1});
+                        marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha,varargin{1:numel(varargin)});
                     elseif nargin == 3
                         marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha);
                     else
@@ -2492,7 +2492,7 @@ classdef StatsLib
                     sampleError = StatsLib.CalcSampleError_givenProportionAndN_inList(pCarrot,n);
                     
                     if nargin == 4
-                        marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha,varargin{1});
+                        marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha,varargin{1:numel(varargin)});
                     elseif nargin == 3
                         marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleError_inList(sampleError,alpha);
                     else
@@ -2502,7 +2502,7 @@ classdef StatsLib
 
                 function [sampleProportion, marginOfError] = CalcSamplePCarrotAndMoE_usingSampleValues_outList_inList(X,n,alpha,varargin)
                     if nargin == 4
-                        marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleValues_inList(X,n,alpha,varargin{1});
+                        marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleValues_inList(X,n,alpha,varargin{1:numel(varargin)});
                     elseif nargin == 3
                         marginOfError = StatsLib.CalcSampleMarginOfError_usingSampleValues_inList(X,n,alpha);
                     else
@@ -2514,7 +2514,7 @@ classdef StatsLib
 
                 function [confidenceIntervalKeyValues] = CalcSamplePCarrotAndMoE_usingSampleValues_outArray_inList(X,n,alpha,varargin)
                     if nargin == 4
-                        [a, b] = StatsLib.CalcSamplePCarrotAndMoE_usingSampleValues_outList_inList(X,n,alpha,varargin{1});
+                        [a, b] = StatsLib.CalcSamplePCarrotAndMoE_usingSampleValues_outList_inList(X,n,alpha,varargin{1:numel(varargin)});
                     elseif nargin == 3
                         [a, b] = StatsLib.CalcSamplePCarrotAndMoE_usingSampleValues_outList_inList(X,n,alpha);
                     else
@@ -2526,7 +2526,7 @@ classdef StatsLib
 
                 function [CI_lowerBound, CI_upperBound] = CalcSampleCIBounds_usingSampleValues_outList_inList(X,n,alpha,varargin)
                     if nargin == 4
-                        confidenceIntervalKeyVals = StatsLib.CalcSamplePCarrotAndMoE_usingSampleValues_outArray_inList(X,n,alpha,varargin{1});
+                        confidenceIntervalKeyVals = StatsLib.CalcSamplePCarrotAndMoE_usingSampleValues_outArray_inList(X,n,alpha,varargin{1:numel(varargin)});
                     elseif nargin == 3
                         confidenceIntervalKeyVals = StatsLib.CalcSamplePCarrotAndMoE_usingSampleValues_outArray_inList(X,n,alpha);
                     else
@@ -2538,7 +2538,7 @@ classdef StatsLib
 
                 function [CIbounds] = CalcSampleCIBounds_usingSampleValues_outArray_inList(X,n,alpha,varargin)
                     if nargin == 4
-                        [a, b] = StatsLib.CalcSampleCIBounds_usingSampleValues_outList_inList(X,n,alpha,varargin{1});
+                        [a, b] = StatsLib.CalcSampleCIBounds_usingSampleValues_outList_inList(X,n,alpha,varargin{1:numel(varargin)});
                     elseif nargin == 3
                         [a, b] = StatsLib.CalcSampleCIBounds_usingSampleValues_outList_inList(X,n,alpha);
                     else
@@ -2548,7 +2548,7 @@ classdef StatsLib
                     CIbounds = [a,b];
                 end
 
-                function [n] = CalcSampleSize_givenCIandMoE_inList(CI,MoE,varargin)
+                function [n] = CalcMinSampleSize_givenCIandMoE_inList(CI,MoE,varargin)
                     %varargin can accept pCarrot value, or sample proportion input
 
                     pCarrot = 0;
@@ -2589,7 +2589,7 @@ classdef StatsLib
                     ChiSquaredVal = chi2inv(inputP, degOfFreedom);
                 end
                 
-                function [ChiSquaredForAlpha_lowerVal, ChiSquaredForAlpha_upperVal] = CalcChiSquaredCritBoundVals_givenCI_outList_inList(CI, n, varargin)
+                function [ChiSquaredBoundsForAlpha_lowerVal, ChiSquaredBoundsForAlpha_upperVal] = CalcCIChiSquaredCritBoundVals_givenCI_outList_inList(CI, n, varargin)
                     % TODO: Need to fix varargin order acceptance
                     degOfFreedom = n;
                     divisor = 2;
@@ -2610,25 +2610,64 @@ classdef StatsLib
                     alphaLeft = CI_tailwidth;
                     alphaRight = (1-CI_tailwidth);
 
-                    ChiSquaredForAlpha_lowerVal = StatsLib.CalcChiSquared_givenPandN_inList(alphaLeft,n,degOfFreedom);
-                    ChiSquaredForAlpha_upperVal = StatsLib.CalcChiSquared_givenPandN_inList(alphaRight,n,degOfFreedom);
+                    ChiSquaredBoundsForAlpha_lowerVal = StatsLib.CalcChiSquared_givenPandN_inList(alphaLeft,n,degOfFreedom);
+                    ChiSquaredBoundsForAlpha_upperVal = StatsLib.CalcChiSquared_givenPandN_inList(alphaRight,n,degOfFreedom);
                 end
 
-                function [ChiSquaredForAlpha_lowerVal, ChiSquaredForAlpha_upperVal] = CalcChiSquaredCritBoundVals_givenAlpha_outList_inList(alpha,n,varargin)
-                    
+                function [ChiSquaredBoundsForAlpha_lowerVal, ChiSquaredBoundsForAlpha_upperVal] = CalcCIChiSquaredCritBoundVals_givenAlpha_outList_inList(alpha,n,varargin)
+                    [ChiSquaredBoundsForAlpha_lowerVal, ChiSquaredBoundsForAlpha_upperVal] = StatsLib.CalcCIChiSquaredCritBoundVals_givenCI_outList_inList(alpha,n,varargin{1:numel(varargin)});
                 end
 
-                function [ChiSquaredForAlphaVals] = CalcChiSquaredCritBoundVals_givenCI_outArray_inList(CI,n,varargin)
-                    
+                function [ChiSquaredBoundsForAlphaVal] = CalcCIChiSquaredCritBoundVals_givenCI_outArray_inList(CI,n,varargin)
+                    [a , b] = StatsLib.CalcCIChiSquaredCritBoundVals_givenCI_outList_inList(CI, n, varargin{1:numel(varargin)});
+                    ChiSquaredBoundsForAlphaVal = [a, b];
                 end
 
-                function [ChiSquaredForAlphaVals] = CalcChiSquaredCritBoundVals_givenAlpha_outArray_inList(alpha,n,varargin)
+                function [ChiSquaredBoundsForAlphaVal] = CalcCIChiSquaredCritBoundVals_givenAlpha_outArray_inList(alpha,n,varargin)
+                    ChiSquaredBoundsForAlphaVal = StatsLib.CalcCIChiSquaredCritBoundVals_givenCI_outArray_inList(alpha, n , varargin{1:numel(varargin)});
                 end
 
-                function [] = CalcStdDevCIlowerBound_usingNAndStdDev(N,sigma,varargin)
+                function [stdDevConfidenceIntervalValue] = CalcStdDevCIVal_usingNAndStdDevAndChiSquaredValue_inList(n,sigma,chiSquaredVal)
+                    stdDevConfidenceIntervalValue = sqrt((n-1).*sigma.^2./chiSquaredVal);
+                end
+
+                function [stdDevConfidenceIntervalValue] = CalcStdDevCIVal_usingNAndStdDevAndP_inList(n,sigma,P,varargin)
                     %varargin can be used to disclose degrees of freedom, default DoF = n - 1
-                    %   input: f = int >= 0
+                    %   e.g. f = {int} that is the actual value of teh degrees of freedom.
 
+                    degOfFreedom = n;
+                    if nargin == 3
+                        degOfFreedom = n - 1;
+                    elseif nargin == 4
+                        defOfFreedom = varargin{1};
+                    else
+                        error("Number of inputs incorrect.");
+                        return;
+                    end
+
+                    chiSquaredVal = StatsLib.CalcChiSquared_givenPandN_inList(P,n,degOfFreedom);
+                    stdDevConfidenceIntervalValue = StatsLib.CalcStdDevCIVal_usingNAndStdDevAndChiSquaredValue_inList(n,sigma,chiSquaredVal);
+                end
+
+                function [stdDevCIBounds] = CalcStdDevCIBoundVals_givenAlphaAndNAndStdDev_outArray_inList(n,sigma,alpha,varargin)
+                    degOfFreedom = n;
+                    if nargin == 3
+                        degOfFreedom = n - 1;
+                    elseif nargin == 4
+                        degOfFreedom = varargin{1};
+                    else
+                        error("Input count not accepted.");
+                        return;
+                    end
+
+                    chiSquaredBoundsForAlpha = StatsLib.CalcCIChiSquaredCritBoundVals_givenCI_outArray_inList(alpha,n,degOfFreedom);
+                    stdDevCIBounds = StatsLib.CalcStdDevCIVal_usingNAndStdDevAndChiSquaredValue_inList(n,sigma,chiSquaredBoundsForAlpha);
+                end
+
+                function [stdDevCIBounds_lowerVal, stdDevCIBounds_upperVal] = CalcStdDevCIBoundVals_givenAlphaAndNAndStdDev_outList_inList(n,sigma,alpha,varargin)
+                    stdDevCIBounds = StatsLib.CalcStdDevCIBoundVals_givenAlphaAndNAndStdDev_outArray_inList(n,sigma,alpha,varargin{1:numel(varargin)});
+                    stdDevCIBounds_lowerVal = stdDevCIBounds(1);
+                    stdDevCIBounds_upperVal = stdDevCIBounds(2);
                 end
 
         % Chapter 8 - Probability Tests
