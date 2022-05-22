@@ -2402,8 +2402,8 @@ classdef StatsLib
                         return;
                     end
 
-                    prob2Calc = (1-alphaValue) ./ divisor;
-                    critZVal = StatsLib.CalcZScoreOfCDFProb(prob2Calc, "upper");
+                    prob2Calc = 1 - alphaValue./divisor;
+                    critZVal = StatsLib.CalcZScoreOfCDFProb(prob2Calc);
                 end
             
             % Point Estimates, Confidence Intervals, Margins of Error
@@ -2571,6 +2571,7 @@ classdef StatsLib
             
             % Construction of Confidence intervals using data | Chapter 7.2
                 function [ChiSquaredVal] = CalcChiSquared_givenPandN_inList(P,n,varargin)
+                    % P is alpha/2
                     % varargin can be used to disclose degrees of freedom, default DoF = n - 1
                     %   input: f = {int} value of degree of freedom for chi2inv func (is not n - inputVal)
                     
@@ -2614,6 +2615,7 @@ classdef StatsLib
                     ChiSquaredBoundsForAlpha_upperVal = StatsLib.CalcChiSquared_givenPandN_inList(alphaRight,n,degOfFreedom);
                 end
 
+                %% TODO: Need to fix given alpha to given CI as they are not the same
                 function [ChiSquaredBoundsForAlpha_lowerVal, ChiSquaredBoundsForAlpha_upperVal] = CalcCIChiSquaredCritBoundVals_givenAlpha_outList_inList(alpha,n,varargin)
                     [ChiSquaredBoundsForAlpha_lowerVal, ChiSquaredBoundsForAlpha_upperVal] = StatsLib.CalcCIChiSquaredCritBoundVals_givenCI_outList_inList(alpha,n,varargin{1:numel(varargin)});
                 end
@@ -2649,7 +2651,7 @@ classdef StatsLib
                     stdDevConfidenceIntervalValue = StatsLib.CalcStdDevCIVal_usingNAndStdDevAndChiSquaredValue_inList(n,sigma,chiSquaredVal);
                 end
 
-                function [stdDevCIBounds] = CalcStdDevCIBoundVals_givenAlphaAndNAndStdDev_outArray_inList(n,sigma,alpha,varargin)
+                function [stdDevCIBounds] = CalcStdDevCIBoundVals_givenCIAndNAndStdDev_outArray_inList(n,sigma,CI,varargin)
                     degOfFreedom = n;
                     if nargin == 3
                         degOfFreedom = n - 1;
@@ -2660,17 +2662,31 @@ classdef StatsLib
                         return;
                     end
 
-                    chiSquaredBoundsForAlpha = StatsLib.CalcCIChiSquaredCritBoundVals_givenCI_outArray_inList(alpha,n,degOfFreedom);
+                    chiSquaredBoundsForAlpha = StatsLib.CalcCIChiSquaredCritBoundVals_givenCI_outArray_inList(CI,n,degOfFreedom);
                     stdDevCIBounds = StatsLib.CalcStdDevCIVal_usingNAndStdDevAndChiSquaredValue_inList(n,sigma,chiSquaredBoundsForAlpha);
                 end
 
-                function [stdDevCIBounds_lowerVal, stdDevCIBounds_upperVal] = CalcStdDevCIBoundVals_givenAlphaAndNAndStdDev_outList_inList(n,sigma,alpha,varargin)
-                    stdDevCIBounds = StatsLib.CalcStdDevCIBoundVals_givenAlphaAndNAndStdDev_outArray_inList(n,sigma,alpha,varargin{1:numel(varargin)});
+                function [stdDevCIBounds_lowerVal, stdDevCIBounds_upperVal] = CalcStdDevCIBoundVals_givenCIAndNAndStdDev_outList_inList(n,sigma,CI,varargin)
+                    stdDevCIBounds = StatsLib.CalcStdDevCIBoundVals_givenCIAndNAndStdDev_outArray_inList(n,sigma,CI,varargin{1:numel(varargin)});
                     stdDevCIBounds_lowerVal = stdDevCIBounds(1);
                     stdDevCIBounds_upperVal = stdDevCIBounds(2);
                 end
 
         % Chapter 8 - Probability Tests
+            % Test Statistics
+                function [testStat] = CalcTestStatistic_givenPCarrotAndPAndN_inList(pCarrot, P, n)
+                    testStat = (pCarrot - P) ./ sqrt(P.* ((1 - P)./ n));
+                end
+
+                function populationProportion = CalcPooledPCarrot_givenXandN_inList(x1,n1,x2,n2)
+                    populationProportion = (x1 + x2) ./ (n1 + n2);
+                end
+
+                function testStat = CalcTestStatisticForTwoPopulations_givenPcarrotAndN_inList(pCarrot1,pCarrot2,n1,n2)
+                    pCarrot_population = StatsLib.CalcPooledPCarrot_givenXandN_inList(pCarrot1.*n1,n1,pCarrot2.*n2,n2);
+                    testStat = (pCarrot1 - pCarrot2) ./ sqrt(pCarrot_population.*(1-pCarrot_population).*(1./n1+1./n2));
+                end
+
             % T - tests
                 function tObserved = CalcTtest_Statistic_normalDist(xBar, mu, sigma, n)
                     %CalcTtest_Statistic_normalDist() | Calculates t observed for t test
