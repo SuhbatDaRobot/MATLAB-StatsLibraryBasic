@@ -45,6 +45,26 @@ classdef StatsLib
 
 
         %Helper Functions
+            function [generatedM] = GenerateMatrixOfValue(val,m,varargin)
+                n = -1;
+                
+                if nargin == 2
+                    n = 1;
+                elseif nargin == 3
+                    n = varagin{1};
+                else
+                    error("Input count not allowed, max 3 inputs.");
+                end
+
+                generatedM = zeros(m,n);
+
+                for i = 1:m
+                    for j = 1:n
+                        generatedM(m,n) = val;
+                    end
+                end
+            end
+
             function isNonRepeating = CheckForRepeats(inputVect)
                 %CheckForRepeats() self explanatory
                 %	Inputs:
@@ -2437,6 +2457,49 @@ classdef StatsLib
                     sampleProportion = StatsLib.CalcSampleProportion_inList(X,n);
                 end
 
+                function multiSampleProportion = CalcPooledSampleProportion_inList(x1,n1,x2,n2,varargin)
+                    %CalcPooledSampleProportiopn_inList() | Calculates sample proportion for multiple sample inputs
+                    %	detailed description here
+                    %	Inputs:
+                    %		- input{dataType}  => 
+                    %	Outputs:
+                    %		- output{dataType} => 
+                    
+                    multiSampleProportion = -1;
+
+                    if nargin == 4
+                        xVals = [x1,x2];
+                        nVals = [n1,n2];
+
+                    elseif nargin > 4
+                        if mod(nargin,2) ~= 0
+                            numVals = 2 + numel(varargin)./2;
+                            xVals = zeros(numVals);
+                            nVals = numel(xVals);
+
+                            xVals(1:2) = [x1, x2];
+                            nVals(1:2) = [n1, n2];
+
+                            for i = 1:(numel(varargin)./2)
+                                xVals(2+i) = varargin{i};
+                                nVals(2+i) = varargin{i.*2};
+                            end
+                        
+                        else
+                            error("Input count must be even as you need X and N.")
+                        end
+
+                    else
+                        error('Input count not accepted.');
+                    end
+
+                    multiSampleProportion = sum(xVals) ./ sum(nVals);
+                end
+
+                function populationProportion = CalcPooledPCarrot_inList(x1,n1,x2,n2,varargin)
+                    populationProportion = StatsLib.CalcPooledSampleProportion_inList(x1,n1,x2,n2,varargin{1:numel(varargin)});
+                end
+
                 function [sampleError] = CalcSampleError_givenProportionAndN_inList(sampleProportion,n)
                     sampleError = sqrt(sampleProportion.*(1-sampleProportion)./n);
                 end
@@ -2672,18 +2735,67 @@ classdef StatsLib
                     stdDevCIBounds_upperVal = stdDevCIBounds(2);
                 end
 
+                function [stdDevCIBounds] = CalcStdDevCIBoundVals_givenCIAndSampleData_outArray_inList(dataArray,CI,varargin)
+                    %CalcStdDevCIBoundValsForSample_givenCIAndSampleData_outM_inList() | Calculates StdDev range for given confidence interval
+                    %	detailed description here
+                    %	Inputs:
+                    %		-dataArray,CI,varargin{dataType} => 
+                    %	Outputs:
+                    %		-[stdDevCIM]{dataType} => 
+                    
+                    data_mean = mean(dataArray);
+                    data_sigma = StatsLib.CalcStdDev_Sample(dataArray);
+                    stdDevCIBounds = StatsLib.CalcStdDevCIBoundVals_givenCIAndStdDev_outArray_inList(numel(dataArray),data_stdDev,CI,varargin{1:numel(varargin)});
+                end
+
+                function [stdDevCIBounds_lowerVal, stdDevCIBounds_upperVal] = CalcStdDevCIBoundVals_givenCIAndSampleData_outList_inList(dataArray,CI,varargin)
+                    stdDevCIBounds = StatsLib.CalcStdDevCIBoundVals_givenCIAndSampleData_outArray_inList(dataArray,CI,varargin{1:numel(varargin)});
+                    stdDevCIBounds_lowerVal = stdDevCIBounds(1);
+                    stdDevCIBounds_upperVal = stdDevCIBounds(2);
+                end
+
+                function [stdDevCIBoundsM] = CalcStdDevCIBounds_givenCIAndSampleDataM_outM_inList(dataM,CI,varargin)
+                    sizeData = size(dataM);
+                    
+                    CIarray = zeros(sizeData(1),1);
+                    
+                    if numel(CI) == 1
+                        for i = 1:sizeData(1)
+                            CIarray = CI;
+                        end
+                    elseif size(CI) == [sizeData(1), 1]
+                        CIarray = CI;
+                    elseif size(CI) == [1, sizeData(1)]
+                        CIarray = CI';
+                    else
+                        error("CI input size does not match data M row count.");
+                    end
+
+                    vararginVect = {-1};
+                    if size(varargin) == [1,1]
+                        vararginVect = {varargin{1}};
+                    elseif size(varargin) == [sizeData(1),1]
+                        
+                    elseif size(varargin) == [1,sizeData(1)]
+                        
+                    else
+                        error("Size of extra inputs not accepted. Must be a singular or be a vector of equal dimension to data matrix row count.");
+                    end
+
+                    stdDevCIBoundsM = StatsLib.GenerateMatrixOfValue(-1,sizeData(1),2);
+                    for i = 1:sizeData(1)
+                        stdDevCIBoundsM(i,:) = StatsLib.CalcStdDevCIBoundVals_givenCIAndSampleData_outArray_inList(dataM(i,:),CI(i),vararginVect);
+                    end
+                end
+
         % Chapter 8 - Probability Tests
             % Test Statistics
                 function [testStat] = CalcTestStatistic_givenPCarrotAndPAndN_inList(pCarrot, P, n)
                     testStat = (pCarrot - P) ./ sqrt(P.* ((1 - P)./ n));
                 end
 
-                function populationProportion = CalcPooledPCarrot_givenXandN_inList(x1,n1,x2,n2)
-                    populationProportion = (x1 + x2) ./ (n1 + n2);
-                end
-
                 function testStat = CalcTestStatisticForTwoPopulations_givenPcarrotAndN_inList(pCarrot1,pCarrot2,n1,n2)
-                    pCarrot_population = StatsLib.CalcPooledPCarrot_givenXandN_inList(pCarrot1.*n1,n1,pCarrot2.*n2,n2);
+                    pCarrot_population = StatsLib.CalcPooledPCarrot_inList(pCarrot1.*n1,n1,pCarrot2.*n2,n2);
                     testStat = (pCarrot1 - pCarrot2) ./ sqrt(pCarrot_population.*(1-pCarrot_population).*(1./n1+1./n2));
                 end
 
